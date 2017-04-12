@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<Project name="LocoNet">
+<File path="utils.c" />
+<File path="throttle.h" />
+<File path="throttle.c" />
+<File path="SVStoragePlainEeprom.c" />
+<File path="SVStorage.h" />
+<File path="sv.h" />
+<File path="sv.c" />
+<File path="loconet.h" />
+<File path="ln_buf.h" />
+<File path="ln_buf.c" />
+<File path="fastclock.h" />
+<File path="fastclock.c" />
+<File path="debounce.h" />
+<File path="debounce.c" />
+<File path="utils.h" />
+</Project>
