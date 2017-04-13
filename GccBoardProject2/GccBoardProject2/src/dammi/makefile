@@ -64,7 +64,7 @@
 #    make progfuses         = Program fuses#
 #*******************************************************************************
 
-# MCU name: "atmega8", "atmega168", "atmega168a", "atmega168p"
+# MCU name: "atmega16", "atmega168", "atmega168a", "atmega168p"
 # may be overwritten on commandline
 MCU = atmega328p
 

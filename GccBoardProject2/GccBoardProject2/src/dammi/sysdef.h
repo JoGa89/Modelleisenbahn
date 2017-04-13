@@ -13,7 +13,7 @@
 #define PRODUCT_ID 1
 #define SOFTWARE_VERSION 1
 //eine "random" SV_MAX_NUMBER gesetzt
-#define SV_MAX_NUMBER 4
+#define SV_MAX_NUMBER 7
 
 #if defined(__AVR_ATmega16__)  
 #define HARDWARE_VERSION  1
