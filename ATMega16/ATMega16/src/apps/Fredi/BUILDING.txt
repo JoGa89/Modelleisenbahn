@@ -1,0 +1,74 @@
+$Id: BUILDING.txt,v 1.5 2011/09/08 10:05:27 pischky Exp $
+
+BUILDING FREDI
+==============
+
+(of Version 1.7)
+
+To build Fredi on Windows do the following steps:
+
+1.) Install WinAVR
+------------------
+
+    Load installer from http://winavr.sourceforge.net/
+    and run it.
+    Notes: FREDI 1.3 .. 1.5 has been compiled with WinAVR 20060421
+           For 1.6 we have forgotten which WinAVR version was used
+           FREDI 1.7 has been compiled with WinAVR 20100110
+           For new versions we will try 20100110
+
+2.) Install a CVS Client
+------------------------
+
+    Nothing to do if you have a linux box ready and you can
+    mount a directory to your windows box with Samba.
+
+    There are command line cvs clients for windows on 
+    http://ftp.gnu.org/non-gnu/cvs/binary/stable/x86-woe/
+    which are maked as stable.
+    But the latested version failed with an empty password 
+    (as needed for anonymous access to the sourceforge cvs server). 
+    I have had success with a feature version from:
+    http://ftp.gnu.org/non-gnu/cvs/binary/feature/x86-woe/cvs-1-12-13a.zip
+
+    If you like to use a mouse install something like
+    TortoiseCVS (http://www.tortoisecvs.org/) but you are 
+    on your own.
+
+3.) Checkout the source files
+-----------------------------
+
+    Checkout apps/Fredi/, loconet/ and avr-base/ using the
+    tag "FREDI_1_7" with your favorite cvs client.
+	
+    If you have a linux box use:
+    
+    $ mkdir fredi
+    $ cd fredi
+    $ cvs -d:pserver:anonymous@embeddedloconet.cvs.sourceforge.net:/cvsroot/embeddedloconet login
+    $ export CVSROOT=:pserver:anonymous@embeddedloconet.cvs.sourceforge.net:/cvsroot/embeddedloconet
+    $ cvs checkout -r FREDI_1_7 apps/Fredi
+    $ cvs checkout -r FREDI_1_7 avr-base
+    $ cvs checkout -r FREDI_1_7 loconet
+
+    If you have version 1.12.13a of the windows client use:
+
+    H:\> mkdir fredi
+    H:\> cd fredi
+    H:\fredi> cvs -d:pserver:anonymous@embeddedloconet.cvs.sourceforge.net:/cvsroot/embeddedloconet login
+    H:\fredi> set CVSROOT=:pserver:anonymous@embeddedloconet.cvs.sourceforge.net:/cvsroot/embeddedloconet
+    H:\fredi> cvs checkout -r FREDI_1_7 apps/Fredi
+    H:\fredi> cvs checkout -r FREDI_1_7 avr-base
+    H:\fredi> cvs checkout -r FREDI_1_7 loconet
+
+4.) Build the application
+------------------------
+
+    If drive H: is mounted via Samba to your home 
+    directory of you linux box use:
+    
+    C:\> H:
+    H:\> cd \fredi\apps\Fredi
+    H:\fredi\apps\Fredi> make allprocessors
+    H:\fredi\apps\Fredi> make clean
+
