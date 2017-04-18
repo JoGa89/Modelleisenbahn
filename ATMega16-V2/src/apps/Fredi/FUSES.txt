@@ -1,0 +1,35 @@
+$Id: FUSES.txt,v 1.2 2011/06/19 14:01:15 pischky Exp $
+
+Settings for ATmega8.
+More info for other MCU is in fuses.c
+
+Fuse bits for FREDI
+===================
+
+Fuse High Byte
+--------------
+
+0: BOOTRST  ----------+
+1: BOOTSZ0  ---------+|
+2: BOOTSZ1  --------+||
+3: EESAVE   -------+|||
+4: CKOPT    -----+ ||||
+5: SPIEN    ----+| ||||
+6: WDTON    ---+|| ||||
+7: RSTDISBL --+||| ||||
+              |||| ||||
+hfuse:        1101 0001 = 0xD1
+
+Fuse Low Byte
+-------------
+
+0: CKSEL0   ----------+
+1: CKSEL1   ---------+|
+2: CKSEL2   --------+||
+3: CKSEL3   -------+|||
+4: SUT0     -----+ ||||
+5: SUT1     ----+| ||||
+6: BODEN    ---+|| ||||
+7: BODLEVEL --+||| ||||
+              |||| ||||
+lfuse:        1011 1111 = 0xBF

@@ -1,0 +1,112 @@
+Editing with Eclipse & AVR Plugin
+==================================================================
+
+$Id: ECLIPSE.txt,v 1.2 2011/09/08 10:05:27 pischky Exp $
+
+Preconditions
+-------------
+
+Eclipse IDE for C/C++ Developers
+Version: Helios Service Release 2
+Build id: 20110218-0911
+
+AVR Eclipse Plugin.
+Version: 2.3.4.20100807PRD
+
+Create Project / Checkout
+------------------------------------------------------------------
+
+Switch to "C/C++" perspective
+
+File>>New>>C Project
+Project Name: "FREDI-ATmega328P"
+[x] Use default Location
+Select "AVR Cross Target Application"/"Empty Project"
+"Next>", "Next>"
+MCU Type: "ATmega328P"
+MCU Frequency (Hz): "7372800"
+"Finish"
+
+Create folder "apps":
+File>>New>>Source Folder
+Project Name: "FREDI-ATmega328P"
+Folder name: "apps"
+"Finish"
+
+Switch to "CVS Repository Exploring" perspective
+
+Create new repository location:
+Host: "embeddedloconet.cvs.sourceforge.net"
+Repository path: "/cvsroot/embeddedloconet"
+User: <your_sourceforge_username> or "anonymous"
+Password: <your_sourceforge_password>
+Connection type: "extssh" or "pserver" (for anonymous)
+
+Select "HEAD"/"apps"/"Fredi" 
+From Context Menu: Check Out As....
+(*) Check out into an existing project
+[x] Checkout subfolders
+"Next>"
+Target folfder name: "Fredi"
+Select Parent of target folder: "FREDI-ATmega328P"/"apps"
+"Next>"
+Select Matching tags: "HEAD"
+"Finish"
+
+Select "HEAD"/"loconet"
+From Context Menu: Check Out As....
+(*) Check out into an existing project
+[x] Checkout subfolders
+"Next>"
+Target folfder name: "loconet"
+Select Parent of target folder: "FREDI-ATmega328P"
+"Next>"
+Select a tag: "FREDI_1_7" (use "Configure Tags..." if not listed)
+
+Select "HEAD"/"avr-base"
+From Context Menu: Check Out As....
+(*) Check out into an existing project
+[x] Checkout subfolders
+"Next>"
+Target folfder name: "loconet"
+Select Parent of target folder: "FREDI-ATmega328P"
+"Next>"
+Select a tag: "FREDI_1_7" (use "Configure Tags..." if not listed))
+
+Switch to "C/C++" perspective
+
+Unfold "avr-base" and select all files below.
+From Context Menu: Repleace With>>Another Branche or Version...
+Select a tag: "HEAD"
+"OK", "OK"
+
+Unfold "loconet" and select all files below.
+From Context Menu: Repleace With>>Another Branche or Version...
+Select a tag: "HEAD"
+"OK", "OK"
+
+Define source and include foldes
+------------------------------------------------------------------
+
+Select "FREDI-ATmega328P"
+From Context Menu: Properties
+Select C/C++ General/Path and Symbols
+Select tab "Includes"
+Press "Add..."
+Directory: "apps/Fredi"
+"OK"
+Press "Add..."
+Directory: "avr-base"
+"OK"
+Press "Add..."
+Directory: "loconet"
+"OK"
+Select tab "Source Location"
+Select "/FREDI-ATmega328P" and press "Delete" 
+Press "Add Folder...", select "avr-base", press "OK"
+Press "Add Folder...", select "loconet", press "OK"
+"OK"
+
+Build Project
+------------------------------------------------------------------
+From main menu: Project>>Build all
