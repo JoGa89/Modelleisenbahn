@@ -1,4 +1,7 @@
 17.04.2017, Tobias Rettemeyer
---Hardware mapping zu sysdef.h hinzugefügt, Pinbelegung entsprechend vierfach Regler von Dammann
---keyInp.h und keyInp.c hinzugefügt und bearbeitet um KeyEvents für Fahrtrichtungstaste verarbeiten zu können
+--Hardware mapping zu sysdef.h hinzugefÃ¼gt, Pinbelegung entsprechend vierfach Regler von Dammann
+--keyInp.h und keyInp.c hinzugefÃ¼gt und bearbeitet um KeyEvents fÃ¼r Fahrtrichtungstaste verarbeiten zu kÃ¶nnen
 --Dammi.c erstellt
+
+19.04.2017, NS
+--Hardware Mapping angepasst in sysdef.h
