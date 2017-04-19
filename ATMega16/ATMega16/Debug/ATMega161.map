@@ -1144,5 +1144,5 @@ END GROUP
  .debug_macro   0x000031fb       0x63 src/avr-base/systimer.o
  .debug_macro   0x0000325e       0xdb src/loconet/ln_buf.o
  .debug_macro   0x00003339       0xe7 src/loconet/ln_interface.o
-OUTPUT(ATMega16.elf elf32-avr)
+OUTPUT(ATMega161.elf elf32-avr)
 LOAD linker stubs
