@@ -1,20 +1,16 @@
 /****************************************************************************
     Copyright (C) 2006, 2011 Olaf Funke, Martin Pischky
-
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
     License as published by the Free Software Foundation; either
     version 2.1 of the License, or (at your option) any later version.
-
     This library is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
     Lesser General Public License for more details.
-
     You should have received a copy of the GNU Lesser General Public
     License along with this library; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-
     $Id: fredi.c,v 1.13 2011/07/31 15:54:12 pischky Exp $
 ******************************************************************************/
 
@@ -274,12 +270,10 @@ static volatile byte    bStopPressed  = FALSE;
   { // set rising edge
     ENC_ISC_REG |= _BV(ENC_ISC_BIT0);
   }
-
   // clear pending interrupt
   ENC_EIRF_REG |= _BV(ENC_EIRF_BIT);
   // set interrupt activ
   ENC_EIRE_REG |= _BV(ENC_EIRE_BIT);
-
   return 0;
 }*/
 
@@ -412,22 +406,23 @@ byte KeyTimerAction( void *UserPointer)
 
 /******************************************************************************/
 //  keys
+// NS: zur zeit nur der direction key 1 für den ersten regler.
 /******************************************************************************/
-  bActKey = KEYPIN_PIN & KEYPIN_ALL ; // 0 means pressed, 1 means released
+  bActKey = PIN_A & Key_Dir_1 ; // 0 means pressed, 1 means released
 
   if (bActKey != bLastKey)
   {
     bEvent      |= EVENT_KEY;
     bLastKey     = bActKey;
 
-    bCurrentKey &= ~KEYPIN_ALL;               // clear all possible keys
-    bCurrentKey |= (~bActKey) & KEYPIN_ALL;   // set relevant keys
+    bCurrentKey &= ~Key_Dir_1;							// clear all possible keys
+    bCurrentKey |= (~bActKey) & Key_Dir_1;				// set relevant keys
   }
 
 /******************************************************************************/
 //  Stop button or increment button
 /******************************************************************************/
-
+/*
   bActEncSwitch = ENC_PIN & _BV(ENC_SWITCH);
 
   if (bActEncSwitch != bLastEncSwitch)  // Change from 0->1 and 1->0
@@ -444,15 +439,37 @@ byte KeyTimerAction( void *UserPointer)
       bCurrentKey |= Key_Stop;                  // pressed key stop
     }
   }
-
+*/
 /******************************************************************************/
 //  direction button
 /******************************************************************************/
-
   if (  (bFrediVersion == FREDI_VERSION_INCREMENT_SWITCH)
      || (bFrediVersion == FREDI_VERSION_ANALOG          ))
   {
-    bActDirSwitch = DIRSWITCH_PIN & _BV(DIRSWITCH);
+    bActDirSwitch = PIN_A & _BV(RICHTG_1);
+
+    if (bActDirSwitch != bLastDirSwitch)         // change of direction
+    {
+      bEvent        |= EVENT_KEY;
+      bLastDirSwitch = bActDirSwitch;
+
+      if (bActDirSwitch)
+      {
+        bCurrentKey &= ~Key_Dir_1;
+      }
+      else
+      {
+        bCurrentKey |= Key_Dir_1;
+      }
+    }
+  }
+
+//Vorlage
+/*
+  if (  (bFrediVersion == FREDI_VERSION_INCREMENT_SWITCH)
+     || (bFrediVersion == FREDI_VERSION_ANALOG          ))
+  {
+    bActDirSwitch = PIN_A & _BV(RICHTG_1);
 
     if (bActDirSwitch != bLastDirSwitch)         // change of direction
     {
@@ -469,7 +486,7 @@ byte KeyTimerAction( void *UserPointer)
       }
     }
   }
-
+*/
 /******************************************************************************/
 //  poti
 /******************************************************************************/
@@ -592,6 +609,7 @@ void initKeys( void )
   {
     potAdcInit();
   }
+  /*
   else // FREDI_VERSION_INCREMENT or FREDI_VERSION_INCREMENT_SWITCH
   {
     potAdcPowerOff();
@@ -622,11 +640,11 @@ void initKeys( void )
     // set interrupt activ
     ENC_EIRE_REG |= _BV(ENC_EIRE_BIT);
   }
-
+	*/
   /***************************************/
   //  init keys
   /***************************************/
-
+	/*
   // set data direction register for encoder
   ENC_DDR &= ~( _BV(ENC_SWITCH) ) ;
 
@@ -638,19 +656,24 @@ void initKeys( void )
 
   // Enable the pull-ups
   ENC_PORT |= ( _BV(ENC_SWITCH) ) ;
-
+	*/
   // set data direction register for keys
-  KEYPIN_DDR  &= ~KEYPIN_ALL ;
+  DDR_A  &= ~FUNK_L_1;
+  DDR_D  &= ~KEYPIN_FUNK_PORT_D ;
+  
+  
   // Enable the pull-ups
-  KEYPIN_PORT |=  KEYPIN_ALL ;
+  PORT_A |=	 FUNK_L_1;
+  PORT_D |=  KEYPIN_FUNK_PORT_D ;
+  
 
   if (  (bFrediVersion == FREDI_VERSION_INCREMENT_SWITCH)
         || (bFrediVersion == FREDI_VERSION_ANALOG          ))
   {
     // set data direction register for direction switch
-    DIRSWITCH_DDR   &= ~( _BV(DIRSWITCH) );
+    DDR_A   &= ~( _BV(RICHTG_1) );
     // Enable the pull-up
-    DIRSWITCH_PORT  |=  ( _BV(DIRSWITCH) );
+    PORT_A  |=  ( _BV(RICHTG_1) );
   }
 
   addTimerAction(&KeyTimer, KEY_POLL_TIME, KeyTimerAction, 0, TIMER_FAST ) ;
@@ -658,15 +681,20 @@ void initKeys( void )
   /***************************************/
   //  init LEDs
   /***************************************/
+  DDR_A		|=	_BV(LED1);
+  PORT_A	&=	~_BV(LED1);
+  
+  DDR_A		|=	_BV(LED2);
+  PORT_A	&=	~_BV(LED2);
 
-  LED_DDR  |=  _BV(LED_GREEN_L); 
-  LED_PORT &= ~_BV(LED_GREEN_L); 
+  DDR_C		|=	_BV(LED3);
+  PORT_C	&=	~_BV(LED3);
+  
+  DDR_C		|=	_BV(LED4);
+  PORT_C	&=	~_BV(LED4);
 
-  LED_DDR  |=  _BV(LED_GREEN_R); 
-  LED_PORT &= ~_BV(LED_GREEN_R); 
-
-  LED_DDR  |=  _BV(LED_RED); 
-  LED_PORT |= _BV(LED_RED);       // set red LED at startup
+  //LED_DDR  |=  _BV(LED_RED); 
+  //LED_PORT |= _BV(LED_RED);       // set red LED at startup
 
   addTimerAction(&LEDTimer, LED_BLINK_TIME, LEDTimerAction, 0, TIMER_SLOW ) ;
 }
@@ -684,6 +712,7 @@ void initKeys( void )
  * RETURN VALUE: none
  * NOTES       :   -
  *******************************************************FunctionHeaderEnd******/
+/*
 ISR(ENC_INT_vect)
 {
   // set interrupt inactiv while debouncing is active
@@ -713,7 +742,7 @@ ISR(ENC_INT_vect)
   }
 }
 
-
+*/
 /******************************************************FunctionHeaderBegin******
  * CREATED     : 2004-12-20
  * AUTHOR      : Olaf Funke
@@ -734,24 +763,24 @@ void vSetState( byte bState )
   case THR_STATE_UNCONNECTED:       // show red LED
   case THR_STATE_INIT:
   case THR_STATE_UNCONNECTED_WRITE:
-    LED_PORT &= ~_BV(LED_GREEN_R);
-    LED_PORT &= ~_BV(LED_GREEN_L); 
-    LED_PORT |=  _BV(LED_RED); 
+	  PORT_A	|=	_BV(LED1);
     bLEDReload = LED_ON;
     break;
 
   case THR_STATE_CONNECTED:         // show direction at state connected
     if (rSlot.dirf & 0x20)
     {
-      LED_PORT &= ~_BV(LED_GREEN_R);
-      LED_PORT |=  _BV(LED_GREEN_L); 
+      //LED_PORT &= ~_BV(LED_GREEN_R);
+      //LED_PORT |=  _BV(LED_GREEN_L); 
+	    PORT_A	&=	~_BV(LED1);
     }
     else
     {
-      LED_PORT &= ~_BV(LED_GREEN_L); 
-      LED_PORT |=  _BV(LED_GREEN_R);
+      //LED_PORT &= ~_BV(LED_GREEN_L); 
+      //LED_PORT |=  _BV(LED_GREEN_R);
+	  PORT_A	|=	_BV(LED1);
     }
-    LED_PORT &= ~_BV(LED_RED);
+    //LED_PORT &= ~_BV(LED_RED);
 
     if (  (bFrediVersion == FREDI_VERSION_ANALOG)
           && (!fSetSpeed))                 // if analog value does not correspond, show blinking
@@ -885,22 +914,31 @@ int main(void)
 		// or if an unguilty ID was programmed
     // stop program at this point and switch all leds on
     // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    LED_DDR  |= _BV(LED_GREEN_L); 
-    LED_PORT |= _BV(LED_GREEN_L); 
-    LED_DDR  |= _BV(LED_GREEN_R); 
-    LED_PORT |= _BV(LED_GREEN_R); 
-    LED_DDR  |= _BV(LED_RED); 
-    LED_PORT |= _BV(LED_RED);
-    while (1);
-  }
-  
-  #ifdef LOCONET_LEVEL_TEST
+	/*
     LED_DDR  |= _BV(LED_GREEN_L);
     LED_PORT |= _BV(LED_GREEN_L);
     LED_DDR  |= _BV(LED_GREEN_R);
     LED_PORT |= _BV(LED_GREEN_R);
     LED_DDR  |= _BV(LED_RED);
     LED_PORT |= _BV(LED_RED);
+	*/
+	  DDR_A		|=	_BV(LED1);
+	  PORT_A	|=	_BV(LED1);
+    while (1);
+  }
+  
+  #ifdef LOCONET_LEVEL_TEST
+  /*
+    LED_DDR  |= _BV(LED_GREEN_L);
+    LED_PORT |= _BV(LED_GREEN_L);
+    LED_DDR  |= _BV(LED_GREEN_R);
+    LED_PORT |= _BV(LED_GREEN_R);
+    LED_DDR  |= _BV(LED_RED);
+    LED_PORT |= _BV(LED_RED);
+	*/
+  	  DDR_A		|=	_BV(LED1);
+  	  PORT_A	|=	_BV(LED1);
+  
     ACSR  = (0<<ACD)  | (0<<ACBG) | (0<<ACO)   | (0<<ACI)
           | (0<<ACIE) | (0<<ACIC) | (0<<ACIS1) | (0<<ACIS0);
     #if defined(__AVR_ATmega48__)  | defined(__AVR_ATmega48A__)  \
@@ -1168,13 +1206,18 @@ void vProcessRxLoconetMessage(void)
 
         if (rSlot.dirf & 0x20)
         {
+		  PORT_A	|=	_BV(LED1);
+		  /*
           LED_PORT &= ~_BV(LED_GREEN_R);
           LED_PORT |=  _BV(LED_GREEN_L); 
+		  */
         }
         else
         {
+			/*
           LED_PORT &= ~_BV(LED_GREEN_L); 
           LED_PORT |=  _BV(LED_GREEN_R);
+		  */
         }
       }
       break;
@@ -1223,7 +1266,7 @@ void vProcessKey(void)
     bEvent &= ~EVENT_KEY;
 
     if (bThrState < THR_STATE_SELFTEST)
-    {
+    {/*
       if ((bLastCurrentkey & Key_SHIFT) && ( !(bCurrentKey & Key_SHIFT)))
       { // the changing key was a release of shift -> no action
       }
@@ -1231,7 +1274,9 @@ void vProcessKey(void)
 			{
 				resetTimerAction(&ReleaseStopTimer, RELEASE_STOP_TIME); 
 			}
-      else if ((bLastCurrentkey & Key_Dir) != (bCurrentKey & Key_Dir))
+      else
+	  */
+	   if ((bLastCurrentkey & Key_Dir_1) != (bCurrentKey & Key_Dir_1))
       { // dir switch changed
         if (  (bThrState == THR_STATE_CONNECTED)
            && (  (bFrediVersion == FREDI_VERSION_ANALOG)
@@ -1251,17 +1296,24 @@ void vProcessKey(void)
 
           sendLocoNetSpd(&rSlot);
 
-          if (bCurrentKey & Key_Dir)
+          if (bCurrentKey & Key_Dir_1)
           { // dir switch was pressed
             rSlot.dirf |= 0x20;
+			PORT_A	|=	_BV(LED1);
+			/*
             LED_PORT   &= ~_BV(LED_GREEN_L); 
             LED_PORT   |=  _BV(LED_GREEN_R);
+			*/
+			
           }
           else
           { // dir switch was released
             rSlot.dirf &= ~0x20;
+			PORT_A	&=	~_BV(LED1);
+			/*
             LED_PORT &= ~_BV(LED_GREEN_R);
             LED_PORT |=  _BV(LED_GREEN_L); 
+			*/
           }
           sendLocoNetDirf(&rSlot);
 
@@ -1274,12 +1326,13 @@ void vProcessKey(void)
       {
         if (bThrState == THR_STATE_CONNECTED)
         {
-          if (bCurrentKey & Key_SHIFT)
+          if (bCurrentKey /*& Key_SHIFT*/)
           {
             bSet = rSlot.snd; 
-
+			/*
             switch (bCurrentKey & ~Key_Dir)
             {
+			
             case (Key_Stop | Key_SHIFT): // undispatch
               rSlot.stat = 0x20;
 
@@ -1299,13 +1352,15 @@ void vProcessKey(void)
               rSlot.snd = bSet; 
               sendLocoNetSnd(&rSlot);
             }
+			*/
           }
           else
           {
             bSet = rSlot.dirf; 
 
-            switch (bCurrentKey & ~Key_Dir)
+            switch (bCurrentKey & ~Key_Dir_1)
             {
+			/*
             case Key_Stop: // increment pushbutton or extra button on analog fredi
               sEncDir = 0;
               bSpdCnt = 0;
@@ -1350,11 +1405,15 @@ void vProcessKey(void)
 								}
               }
               break;
+			  
             case Key_F0:  bSet ^= 0x10; break;
             case Key_F1:  bSet ^= 0x01; break;
             case Key_F2:  bSet ^= 0x02; break;
             case Key_F3:  bSet ^= 0x04; break;
             case Key_F4:  bSet ^= 0x08; break;
+			*/
+			case FUNK_L_1:  bSet ^= 0x10; break;
+			
             default:                    break;
             }
 
@@ -1367,7 +1426,7 @@ void vProcessKey(void)
         } // end of if(bThrState == THR_STATE_CONNECTED)
         else if (bThrState == THR_STATE_UNCONNECTED)
         {
-          if ((bCurrentKey & ~Key_Dir) == (Key_Stop | Key_SHIFT))   // try to dispatch
+          if ((bCurrentKey & ~Key_Dir_1) /* == (Key_Stop | Key_SHIFT)*/)   // try to dispatch
           {
             vSetState(THR_STATE_ACQUIRE_LOCO_GET);
             sendLocoNetMove(0, 0);
@@ -1375,7 +1434,7 @@ void vProcessKey(void)
         }
         else
         {
-          if ((bCurrentKey & (Key_Stop | Key_SHIFT)) == (Key_Stop | Key_SHIFT))
+          if (bCurrentKey /*& (Key_Stop | Key_SHIFT)) == (Key_Stop | Key_SHIFT)*/)
           {
             rSlot.stat = 0x20;
 
@@ -1450,11 +1509,11 @@ void vProcessEncoder(void)
     {
       if (sEncDir < 0)                  // left rotation decoded
       {
-        wSelfTest |= Key_Enc_L;
+        // wSelfTest |= Key_Enc_L;
       }
       else                              // right ratation decoded
       {
-        wSelfTest |= Key_Enc_R;
+        // wSelfTest |= Key_Enc_R;
       }
       sendLocoNetFredButton( sEncDir );
 
@@ -1733,6 +1792,7 @@ void vCheckSelfTestEnd(void)
 
   switch (bFrediVersion)
   {
+	/*
   case FREDI_VERSION_INCREMENT:
     if (wSelfTest == Key_Fredi_Inkrement)
     {
@@ -1745,6 +1805,7 @@ void vCheckSelfTestEnd(void)
       fSelfTestEnd = TRUE;        
     }
     break;
+	*/
   case FREDI_VERSION_ANALOG:
     if (wSelfTest == Key_Fredi_Poti)
     {
@@ -1797,7 +1858,7 @@ void vCopySlotFromRxPacket(void)
   {
     rSlot.dirf = RxPacket->data[ 6] & ~0x20;            // get direction by switch position                          
 
-    if (bCurrentKey & Key_Dir)
+    if (bCurrentKey & Key_Dir_1)
     {
       rSlot.dirf |=  0x20;                                    
     }
@@ -1849,4 +1910,3 @@ void vSetUnconnected(void)
 
   vSetState(THR_STATE_UNCONNECTED);
 }
-

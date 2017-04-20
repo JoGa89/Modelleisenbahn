@@ -1,20 +1,16 @@
 /****************************************************************************
     Copyright (C) 2006 Olaf Funke
-
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
     License as published by the Free Software Foundation; either
     version 2.1 of the License, or (at your option) any later version.
-
     This library is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
     Lesser General Public License for more details.
-
     You should have received a copy of the GNU Lesser General Public
     License along with this library; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-
     $Id: sysdef.h,v 1.16 2011/08/04 12:41:35 pischky Exp $
 ******************************************************************************/
 #ifndef _SYSDEF_H_
@@ -267,11 +263,9 @@
 #define KEYPIN_F2       PB3
 #define KEYPIN_F1       PB4
 #define KEYPIN_F0       PB5
-
 #define KEYPIN_PORT     PORTB
 #define KEYPIN_DDR      DDRB
 #define KEYPIN_PIN      PINB
-
 // PortC
 #define ANA_SPD         PC0
 #define DIRSWITCH       PC1
@@ -279,19 +273,15 @@
 #define LED_GREEN_L     PC3
 #define LED_RED         PC4
 #define ANA_VERSION     PC5
-
 #define LED_PORT        PORTC
 #define LED_DDR         DDRC
-
 #define DIRSWITCH_PORT  PORTC
 #define DIRSWITCH_DDR   DDRC
 #define DIRSWITCH_PIN   PINC
-
 // PortD
 #define ENC_BIT_0       PD2
 #define ENC_BIT_1       PD3
 #define ENC_SWITCH      PD5
-
 #define ENC_PORT        PORTD
 #define ENC_DDR         DDRD
 #define ENC_PIN         PIND
@@ -329,47 +319,50 @@
 #define ENC_INT_vect	INT1_vect	// interrupt 1
 
 // defines for key mapping
-
-#define KEYPIN_ALL    ( _BV(FUNK_1) |\
-                        _BV(FUNK_2) |\
-                        _BV(FUNK_3) |\
-                        _BV(FUNK_4) |\
-                        _BV(FUNK_L_1) |\
-                        _BV(FUNK_L_2) |\
-                        _BV(FUNK_L_3) |\
-                        _BV(FUNK_L_4) )
+// Extra Funk Tasten
+#define KEYPIN_FUNK_PORT_D    ( _BV(FUNK_1) |\
+								_BV(FUNK_2) |\
+								_BV(FUNK_3) |\
+								_BV(FUNK_4) )
 
 #define Key_FUNK_1				_BV(FUNK_1)
 #define Key_FUNK_2				_BV(FUNK_2)
 #define Key_FUNK_3				_BV(FUNK_3)
 #define Key_FUNK_4				_BV(FUNK_4)
+
+// Funk Tasten
 #define Key_FUNK_L_1			_BV(FUNK_L_1)
 #define Key_FUNK_L_2			_BV(FUNK_L_2)
 #define Key_FUNK_L_3			_BV(FUNK_L_3)
 #define Key_FUNK_L_4			_BV(FUNK_L_4)
+
+// Direction Keys
+#define Key_Dir_1				_BV(RICHTG_1)
+#define Key_Dir_2				_BV(RICHTG_2)
+#define Key_Dir_3				_BV(RICHTG_3)
+#define Key_Dir_4				_BV(RICHTG_4)
+
 #define Key_F5          (Key_F1 | Key_SHIFT)
 //Zusätzliche Funktionstasten durch Kombination
 
-#define Key_Dir         0x80
+//#define Key_Dir         0x80
 
 
 #define Key_Poti_L      0x0400
 #define Key_Poti_R      0x0800
 
 
-#define Key_Fredi_Poti              (KEYPIN_ALL | Key_Stop | Key_Poti_L | Key_Poti_R | Key_Dir)
+#define Key_Fredi_Poti              (KEYPIN_FUNK_PORT_D | Key_Poti_L | Key_Poti_R | Key_Dir_1)
 
 
 
 /*// defines for key mapping
-
 #define KEYPIN_ALL    ( _BV(KEYPIN_F0) |\
 _BV(KEYPIN_F1) |\
 _BV(KEYPIN_F2) |\
 _BV(KEYPIN_F3) |\
 _BV(KEYPIN_F4) |\
 _BV(KEYPIN_SHIFT) )
-
 #define Key_F0          _BV(KEYPIN_F0)
 #define Key_SHIFT       _BV(KEYPIN_SHIFT)
 #define Key_F1          _BV(KEYPIN_F1)
@@ -382,16 +375,13 @@ _BV(KEYPIN_SHIFT) )
 #define Key_F8          (Key_F4 | Key_SHIFT)
 #define Key_Stop        0x40
 #define Key_Dir         0x80
-
 #define Key_Enc_L       0x0100
 #define Key_Enc_R       0x0200
 #define Key_Poti_L      0x0400
 #define Key_Poti_R      0x0800
-
 #define Key_Fredi_Inkrement         (KEYPIN_ALL | Key_Stop | Key_Enc_L  | Key_Enc_R )
 #define Key_Fredi_Inkrement_Switch  (KEYPIN_ALL | Key_Stop | Key_Enc_L  | Key_Enc_R  | Key_Dir)
 #define Key_Fredi_Poti              (KEYPIN_ALL | Key_Stop | Key_Poti_L | Key_Poti_R | Key_Dir)
-
 #define ENC_BITS      ( _BV(ENC_BIT_0) | _BV(ENC_BIT_1) )*/
 
 
