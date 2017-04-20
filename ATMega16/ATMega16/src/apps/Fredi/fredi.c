@@ -263,7 +263,7 @@ static volatile byte    bStopPressed  = FALSE;
  * RETURN VALUE: byte, is set to 0 because this timer is has only 
  *               "monoflop"-functionality
  *******************************************************FunctionHeaderEnd******/
-byte IncrementTimerAction( void *UserPointer)
+/*byte IncrementTimerAction( void *UserPointer)
 {
   // detect actual state of pin to set next interrupt edge
   if ( bit_is_set(ENC_PIN, ENC_BIT_1))
@@ -281,7 +281,7 @@ byte IncrementTimerAction( void *UserPointer)
   ENC_EIRE_REG |= _BV(ENC_EIRE_BIT);
 
   return 0;
-}
+}*/
 
 
 /******************************************************FunctionHeaderBegin******
@@ -308,7 +308,7 @@ byte IncrementTimerAction( void *UserPointer)
 byte LEDTimerAction( void *UserPointer)
 {
 /******************************************************************************/
-// mismatching speed
+// mismatching speed		------------------------------------------------------------------------Portänderung
 /******************************************************************************/
   if (bThrState == THR_STATE_CONNECTED)
   {
@@ -318,25 +318,25 @@ byte LEDTimerAction( void *UserPointer)
 			if (rSlot.spd > potAdcSpeedValue)         // speed is higher than position of poti
 			{
 				// -> speed up (turn right)
-				if (bit_is_clear(LED_PORT, LED_GREEN_R))
+				if (bit_is_clear(PORTA, LED1))
 				{
-					LED_PORT |= _BV(LED_GREEN_R); 
+					PORTA |= _BV(LED1); 
 				}
 				else
 				{
-					LED_PORT &= ~_BV(LED_GREEN_R); 
+					PORTA &= ~_BV(LED1); 
 				}
 			}
 			else                                      // speed is lower than position of poti
 			{
 				// -> speed down (turn left)             
-				if (bit_is_clear(LED_PORT, LED_GREEN_L))
+				if (bit_is_clear(PORTA, LED1))
 				{
-					LED_PORT |= _BV(LED_GREEN_L); 
+					PORTA |= _BV(LED1); 
 				}
 				else
 				{
-					LED_PORT &= ~_BV(LED_GREEN_L); 
+					PORTA &= ~_BV(LED1); 
 				}
 			}
     }
@@ -348,7 +348,7 @@ byte LEDTimerAction( void *UserPointer)
 /******************************************************************************/
 // Selftest
 /******************************************************************************/
-  else if (bThrState >= THR_STATE_SELFTEST)     // while selftest is active show rotating LEDs
+/*  else if (bThrState >= THR_STATE_SELFTEST)     // while selftest is active show rotating LEDs
   {
     // -> fast rotation shows selftest active
     if (bit_is_set(LED_PORT, LED_GREEN_R))      // -> slow rotation shows selftest done
@@ -369,23 +369,21 @@ byte LEDTimerAction( void *UserPointer)
       LED_PORT &= ~_BV(LED_GREEN_L); 
       LED_PORT &= ~_BV(LED_RED); 
     }
-  }
+  }*/
 /******************************************************************************/
-// dispatching
+// dispatching			---------------------------------------------------------------------Portänderung
 /******************************************************************************/
   else  // show alternating blinking between red and green 
   {
-    if ( bit_is_set(LED_PORT, LED_GREEN_L))
+    if ( bit_is_set(PORTA, LED1))
     {
-      LED_PORT |=  _BV(LED_RED); 
-      LED_PORT &= ~_BV(LED_GREEN_R) ; 
-      LED_PORT &= ~_BV(LED_GREEN_L) ; 
+     // LED_PORT |=  _BV(LED_RED);				Wechsel zwische Rot und Grün auf LED1, Blinken
+     // LED_PORT &= ~_BV(LED_GREEN_L) ; 
     }
     else
     {
-      LED_PORT &= ~_BV(LED_RED); 
-      LED_PORT |=  _BV(LED_GREEN_R) ; 
-      LED_PORT |=  _BV(LED_GREEN_L) ; 
+    //  LED_PORT &= ~_BV(LED_RED); 
+    //  LED_PORT |=  _BV(LED_GREEN_L) ; 
     }
   }
   return bLEDReload;

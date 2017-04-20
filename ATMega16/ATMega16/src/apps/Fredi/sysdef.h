@@ -259,7 +259,7 @@
 #define PIN_D			PIND
 
 //-------------------------------------------
-
+/*
 // PortB
 #define KEYPIN_SHIFT    PB0
 #define KEYPIN_F4       PB1
@@ -295,7 +295,7 @@
 #define ENC_PORT        PORTD
 #define ENC_DDR         DDRD
 #define ENC_PIN         PIND
-
+*/
 // encoder interrupt
 #if defined(__AVR_ATmega16__)
 
@@ -330,12 +330,45 @@
 
 // defines for key mapping
 
+#define KEYPIN_ALL    ( _BV(FUNK_1) |\
+                        _BV(FUNK_2) |\
+                        _BV(FUNK_3) |\
+                        _BV(FUNK_4) |\
+                        _BV(FUNK_L_1) |\
+                        _BV(FUNK_L_2) |\
+                        _BV(FUNK_L_3) |\
+                        _BV(FUNK_L_4) )
+
+#define Key_FUNK_1				_BV(FUNK_1)
+#define Key_FUNK_2				_BV(FUNK_2)
+#define Key_FUNK_3				_BV(FUNK_3)
+#define Key_FUNK_4				_BV(FUNK_4)
+#define Key_FUNK_L_1			_BV(FUNK_L_1)
+#define Key_FUNK_L_2			_BV(FUNK_L_2)
+#define Key_FUNK_L_3			_BV(FUNK_L_3)
+#define Key_FUNK_L_4			_BV(FUNK_L_4)
+#define Key_F5          (Key_F1 | Key_SHIFT)
+//Zusätzliche Funktionstasten durch Kombination
+
+#define Key_Dir         0x80
+
+
+#define Key_Poti_L      0x0400
+#define Key_Poti_R      0x0800
+
+
+#define Key_Fredi_Poti              (KEYPIN_ALL | Key_Stop | Key_Poti_L | Key_Poti_R | Key_Dir)
+
+
+
+/*// defines for key mapping
+
 #define KEYPIN_ALL    ( _BV(KEYPIN_F0) |\
-                        _BV(KEYPIN_F1) |\
-                        _BV(KEYPIN_F2) |\
-                        _BV(KEYPIN_F3) |\
-                        _BV(KEYPIN_F4) |\
-                        _BV(KEYPIN_SHIFT) )
+_BV(KEYPIN_F1) |\
+_BV(KEYPIN_F2) |\
+_BV(KEYPIN_F3) |\
+_BV(KEYPIN_F4) |\
+_BV(KEYPIN_SHIFT) )
 
 #define Key_F0          _BV(KEYPIN_F0)
 #define Key_SHIFT       _BV(KEYPIN_SHIFT)
@@ -359,7 +392,7 @@
 #define Key_Fredi_Inkrement_Switch  (KEYPIN_ALL | Key_Stop | Key_Enc_L  | Key_Enc_R  | Key_Dir)
 #define Key_Fredi_Poti              (KEYPIN_ALL | Key_Stop | Key_Poti_L | Key_Poti_R | Key_Dir)
 
-#define ENC_BITS      ( _BV(ENC_BIT_0) | _BV(ENC_BIT_1) )
+#define ENC_BITS      ( _BV(ENC_BIT_0) | _BV(ENC_BIT_1) )*/
 
 
 /******************************************************************************/
