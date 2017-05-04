@@ -115,7 +115,7 @@
 /******************************************************************************/
 // functions
 /******************************************************************************/
-void vSetState( byte bState );
+void vSetState( byte bState, rwSlotDataMsg *currentSlot );
 void vProcessRxLoconetMessage(rwSlotDataMsg *currentSlot);
 void vProcessRxMonitorMessage(void);
 void vProcessKey(rwSlotDataMsg *currentSlot);
@@ -123,15 +123,15 @@ void vProcessEncoder(rwSlotDataMsg *currentSlot);
 void vProcessPoti(rwSlotDataMsg *currentSlot);
 void vCheckSelfTestEnd(void);
 
-void vCopySlotFromRxPacket(void);
-void vSetUnconnected(void);
+void vCopySlotFromRxPacket(rwSlotDataMsg *currentSlot);
+void vSetUnconnected(rwSlotDataMsg *currentSlot);
 
-void sendLocoNetSpd(rwSlotDataMsg *pSlot);
-void sendLocoNetDirf(rwSlotDataMsg *pSlot);
-void sendLocoNetSnd(rwSlotDataMsg *pSlot);
-void sendLocoNetWriteSlotData(rwSlotDataMsg *pSlot);
+void sendLocoNetSpd(rwSlotDataMsg *currentSlot);
+void sendLocoNetDirf(rwSlotDataMsg *currentSlot);
+void sendLocoNetSnd(rwSlotDataMsg *currentSlot);
+void sendLocoNetWriteSlotData(rwSlotDataMsg *currentSlot);
 void sendLocoNetMove(byte bSrc, byte bDest);
-void sendLocoNetAdr(rwSlotDataMsg *pSlot);
+void sendLocoNetAdr(rwSlotDataMsg *currentSlot);
 //void sendLocoNetSelfTest(byte bTestCase, byte bValue);
 void sendLocoNetFredAdc( uint16_t raw );
 void sendLocoNetFredCd( uint8_t cdTime );
@@ -202,14 +202,16 @@ const byte abSpd[MAX_SPEED+4] =
   115,119,123,127,127,127,127
 };
 
-#define GET_SPDCNT_BY_SLOTSPD bSpdCnt = MAX_SPEED;                                        \
-                              for (i = 0; i < MAX_SPEED; i++)                             \
-                              {                                                           \
-                                if ((abSpd[i] <= rSlot.spd) && (abSpd[i+1] > rSlot.spd))  \
-                                {                                                         \
-                                  bSpdCnt = i;                                            \
-                                }                                                         \
-                              }
+void GET_SPDCNT_BY_SLOTSPD (rwSlotDataMsg *currentSlot) {									
+	bSpdCnt = MAX_SPEED;                                        
+	for (int i = 0; i < MAX_SPEED; i++)                             
+	{                                                           
+		if ((abSpd[i] <= currentSlot->spd) && (abSpd[i+1] > currentSlot->spd))
+		{                                                       
+			bSpdCnt = i;                                        
+		}                                                       
+	}
+}
 
 
 
@@ -306,91 +308,92 @@ byte IncrementTimerAction( void *UserPointer)
  * ARGUMENTS   : void *UserPointer
  * RETURN VALUE: byte, depence on blinkfrequency
  *******************************************************FunctionHeaderEnd******/
-byte LEDTimerAction( void *UserPointer)
+byte LEDTimerAction( void *UserPointer, rwSlotDataMsg *currentSlot)
 {
-/******************************************************************************/
-// mismatching speed
-/******************************************************************************/
-  if (bThrState == THR_STATE_CONNECTED)
-  {
-    if (  (bFrediVersion == FREDI_VERSION_ANALOG)
-          && (!fSetSpeed))                         // if analog value does not correspond, show blinking
-    {
-			if (rSlot.spd > potAdcSpeedValue)         // speed is higher than position of poti
+	/******************************************************************************/
+	// mismatching speed
+	/******************************************************************************/
+	if (bThrState == THR_STATE_CONNECTED)
+	{
+		if (  (bFrediVersion == FREDI_VERSION_ANALOG)
+		&& (!fSetSpeed))                         // if analog value does not correspond, show blinking
+		{
+			if (currentSlot->spd > potAdcSpeedValue)         // speed is higher than position of poti
 			{
 				// -> speed up (turn right)
 				if (bit_is_clear(LED_PORT, LED_GREEN_R))
 				{
-					LED_PORT |= _BV(LED_GREEN_R); 
+					LED_PORT |= _BV(LED_GREEN_R);
 				}
 				else
 				{
-					LED_PORT &= ~_BV(LED_GREEN_R); 
+					LED_PORT &= ~_BV(LED_GREEN_R);
 				}
 			}
 			else                                      // speed is lower than position of poti
 			{
-				// -> speed down (turn left)             
+				// -> speed down (turn left)
 				if (bit_is_clear(LED_PORT, LED_GREEN_L))
 				{
-					LED_PORT |= _BV(LED_GREEN_L); 
+					LED_PORT |= _BV(LED_GREEN_L);
 				}
 				else
 				{
-					LED_PORT &= ~_BV(LED_GREEN_L); 
+					LED_PORT &= ~_BV(LED_GREEN_L);
 				}
 			}
-    }
-    else                                        // no use for blinking anymore, so stop timer
-    {
-   		bLEDReload = LED_ON;
-    }
-  }
-/******************************************************************************/
-// Selftest
-/******************************************************************************/
-  else if (bThrState >= THR_STATE_SELFTEST)     // while selftest is active show rotating LEDs
-  {
-    // -> fast rotation shows selftest active
-    if (bit_is_set(LED_PORT, LED_GREEN_R))      // -> slow rotation shows selftest done
-    {
-      LED_PORT &= ~_BV(LED_GREEN_R);
-      LED_PORT |=  _BV(LED_GREEN_L); 
-      LED_PORT &= ~_BV(LED_RED); 
-    }
-    else if (bit_is_set(LED_PORT, LED_GREEN_L))
-    {
-      LED_PORT &= ~_BV(LED_GREEN_R);
-      LED_PORT &= ~_BV(LED_GREEN_L); 
-      LED_PORT |=  _BV(LED_RED);
-    }
-    else
-    {
-      LED_PORT |=  _BV(LED_GREEN_R);
-      LED_PORT &= ~_BV(LED_GREEN_L); 
-      LED_PORT &= ~_BV(LED_RED); 
-    }
-  }
-/******************************************************************************/
-// dispatching
-/******************************************************************************/
-  else  // show alternating blinking between red and green 
-  {
-    if ( bit_is_set(LED_PORT, LED_GREEN_L))
-    {
-      LED_PORT |=  _BV(LED_RED); 
-      LED_PORT &= ~_BV(LED_GREEN_R) ; 
-      LED_PORT &= ~_BV(LED_GREEN_L) ; 
-    }
-    else
-    {
-      LED_PORT &= ~_BV(LED_RED); 
-      LED_PORT |=  _BV(LED_GREEN_R) ; 
-      LED_PORT |=  _BV(LED_GREEN_L) ; 
-    }
-  }
-  return bLEDReload;
+		}
+		else                                        // no use for blinking anymore, so stop timer
+		{
+			bLEDReload = LED_ON;
+		}
+	}
+	/******************************************************************************/
+	// Selftest
+	/******************************************************************************/
+	else if (bThrState >= THR_STATE_SELFTEST)     // while selftest is active show rotating LEDs
+	{
+		// -> fast rotation shows selftest active
+		if (bit_is_set(LED_PORT, LED_GREEN_R))      // -> slow rotation shows selftest done
+		{
+			LED_PORT &= ~_BV(LED_GREEN_R);
+			LED_PORT |=  _BV(LED_GREEN_L);
+			LED_PORT &= ~_BV(LED_RED);
+		}
+		else if (bit_is_set(LED_PORT, LED_GREEN_L))
+		{
+			LED_PORT &= ~_BV(LED_GREEN_R);
+			LED_PORT &= ~_BV(LED_GREEN_L);
+			LED_PORT |=  _BV(LED_RED);
+		}
+		else
+		{
+			LED_PORT |=  _BV(LED_GREEN_R);
+			LED_PORT &= ~_BV(LED_GREEN_L);
+			LED_PORT &= ~_BV(LED_RED);
+		}
+	}
+	/******************************************************************************/
+	// dispatching
+	/******************************************************************************/
+	else  // show alternating blinking between red and green
+	{
+		if ( bit_is_set(LED_PORT, LED_GREEN_L))
+		{
+			LED_PORT |=  _BV(LED_RED);
+			LED_PORT &= ~_BV(LED_GREEN_R) ;
+			LED_PORT &= ~_BV(LED_GREEN_L) ;
+		}
+		else
+		{
+			LED_PORT &= ~_BV(LED_RED);
+			LED_PORT |=  _BV(LED_GREEN_R) ;
+			LED_PORT |=  _BV(LED_GREEN_L) ;
+		}
+	}
+	return bLEDReload;
 }
+
 
 
 /******************************************************FunctionHeaderBegin******
@@ -503,69 +506,69 @@ byte KeyTimerAction( void *UserPointer)
  * ARGUMENTS   : void *UserPointer
  * RETURN VALUE: byte
  *******************************************************FunctionHeaderEnd******/
-byte MessageTimerAction( void *UserPointer)
+byte MessageTimerAction( void *UserPointer, rwSlotDataMsg *currentSlot)
 {
-  byte bRetVal = MESSAGE_TIME;
+	byte bRetVal = MESSAGE_TIME;
 
-  switch (bThrState)
-  {
-  case THR_STATE_CONNECTED:
-    sendLocoNet4BytePacket(OPC_LOCO_SPD,rSlot.slot,rSlot.spd);
-    bRetVal = SPEED_TIME;
-    break;
-  case THR_STATE_ACQUIRE_LOCO_GET:
-  case THR_STATE_ACQUIRE_LOCO_WRITE:
-  case THR_STATE_RECONNECT_GET_SLOT:
-  case THR_STATE_RECONNECT_WRITE:
-  case THR_STATE_RECONNECT_NULL_MOVE:
-    vSetState(THR_STATE_RECONNECT_GET_SLOT);
-    if (sendLocoNet4BytePacket(OPC_LOCO_ADR, rSlot.adr2, rSlot.adr) != LN_DONE)
-    {
-      bRetVal = MESSAGE_TIME;
-    }
-    else
-    {
-      bRetVal = RESPONSE_TIME;
-    }
-    break;
-  case THR_STATE_UNCONNECTED_WRITE:
-    {
-      lnMsg SendPacket ;
+	switch (bThrState)
+	{
+		case THR_STATE_CONNECTED:
+		sendLocoNet4BytePacket(OPC_LOCO_SPD,currentSlot->slot,currentSlot->spd);
+		bRetVal = SPEED_TIME;
+		break;
+		case THR_STATE_ACQUIRE_LOCO_GET:
+		case THR_STATE_ACQUIRE_LOCO_WRITE:
+		case THR_STATE_RECONNECT_GET_SLOT:
+		case THR_STATE_RECONNECT_WRITE:
+		case THR_STATE_RECONNECT_NULL_MOVE:
+		vSetState(THR_STATE_RECONNECT_GET_SLOT);
+		if (sendLocoNet4BytePacket(OPC_LOCO_ADR, currentSlot->adr2, currentSlot->adr) != LN_DONE)
+		{
+			bRetVal = MESSAGE_TIME;
+		}
+		else
+		{
+			bRetVal = RESPONSE_TIME;
+		}
+		break;
+		case THR_STATE_UNCONNECTED_WRITE:
+		{
+			lnMsg SendPacket ;
 
-      SendPacket.sd.command   = OPC_WR_SL_DATA  ; //opcode
-      SendPacket.sd.mesg_size = 14              ; // length
-      SendPacket.sd.slot      = rSlot.slot      ; // slot    2    
-      SendPacket.sd.stat      = rSlot.stat      ; // stat    3    
-      SendPacket.sd.adr       = rSlot.adr       ; // adr     4    
-      SendPacket.sd.spd       = rSlot.spd       ; // spd     5    
-      SendPacket.sd.dirf      = rSlot.dirf      ; // dirf    6    
-      SendPacket.sd.trk       = rSlot.trk       ; // trk     7    
-      SendPacket.sd.ss2       = rSlot.ss2       ; // ss2     8    
-      SendPacket.sd.adr2      = rSlot.adr2      ; // adr2    9    
-      SendPacket.sd.snd       = rSlot.snd       ; // snd    10    
-      SendPacket.sd.id1       = rSlot.id1       ; // id1    11   
-      SendPacket.sd.id2       = rSlot.id2       ; // id2    12   
+			SendPacket.sd.command   = OPC_WR_SL_DATA  ; //opcode
+			SendPacket.sd.mesg_size = 14              ; // length
+			SendPacket.sd.slot      = currentSlot->slot      ; // slot    2
+			SendPacket.sd.stat      = currentSlot->stat      ; // stat    3
+			SendPacket.sd.adr       = currentSlot->adr       ; // adr     4
+			SendPacket.sd.spd       = currentSlot->spd       ; // spd     5
+			SendPacket.sd.dirf      = currentSlot->dirf      ; // dirf    6
+			SendPacket.sd.trk       = currentSlot->trk       ; // trk     7
+			SendPacket.sd.ss2       = currentSlot->ss2       ; // ss2     8
+			SendPacket.sd.adr2      = currentSlot->adr2      ; // adr2    9
+			SendPacket.sd.snd       = currentSlot->snd       ; // snd    10
+			SendPacket.sd.id1       = currentSlot->id1       ; // id1    11
+			SendPacket.sd.id2       = currentSlot->id2       ; // id2    12
 
-      LN_STATUS status = sendLocoNetPacket( &SendPacket );
+			LN_STATUS status = sendLocoNetPacket( &SendPacket );
 
-      if (status != LN_DONE)
-      {
-        bRetVal = MESSAGE_TIME;
-      }
-      else
-      {
-        bRetVal = RESPONSE_TIME;
-      }
-    }
-    break;
-  case THR_STATE_INIT:          // stop timer, there is nothing to do
-  case THR_STATE_UNCONNECTED:
-  default:
-    bRetVal = 0;
-    break;
-  }
+			if (status != LN_DONE)
+			{
+				bRetVal = MESSAGE_TIME;
+			}
+			else
+			{
+				bRetVal = RESPONSE_TIME;
+			}
+		}
+		break;
+		case THR_STATE_INIT:          // stop timer, there is nothing to do
+		case THR_STATE_UNCONNECTED:
+		default:
+		bRetVal = 0;
+		break;
+	}
 
-  return bRetVal;
+	return bRetVal;
 }
 
 
@@ -728,65 +731,65 @@ ISR(ENC_INT_vect)
  * RETURN VALUE: none
  * NOTES       :   -
  *******************************************************FunctionHeaderEnd******/
-void vSetState( byte bState )
+void vSetState( byte bState, rwSlotDataMsg *currentSlot)
 {
-  bThrState = bState;
+	bThrState = bState;
 
-  switch (bThrState)
-  {
-  case THR_STATE_UNCONNECTED:       // show red LED
-  case THR_STATE_INIT:
-  case THR_STATE_UNCONNECTED_WRITE:
-    LED_PORT &= ~_BV(LED_GREEN_R);
-    LED_PORT &= ~_BV(LED_GREEN_L); 
-    LED_PORT |=  _BV(LED_RED); 
-    bLEDReload = LED_ON;
-    break;
+	switch (bThrState)
+	{
+		case THR_STATE_UNCONNECTED:       // show red LED
+		case THR_STATE_INIT:
+		case THR_STATE_UNCONNECTED_WRITE:
+		LED_PORT &= ~_BV(LED_GREEN_R);
+		LED_PORT &= ~_BV(LED_GREEN_L);
+		LED_PORT |=  _BV(LED_RED);
+		bLEDReload = LED_ON;
+		break;
 
-  case THR_STATE_CONNECTED:         // show direction at state connected
-    if (rSlot.dirf & 0x20)
-    {
-      LED_PORT &= ~_BV(LED_GREEN_R);
-      LED_PORT |=  _BV(LED_GREEN_L); 
-    }
-    else
-    {
-      LED_PORT &= ~_BV(LED_GREEN_L); 
-      LED_PORT |=  _BV(LED_GREEN_R);
-    }
-    LED_PORT &= ~_BV(LED_RED);
+		case THR_STATE_CONNECTED:         // show direction at state connected
+		if (currentSlot->dirf & 0x20)
+		{
+			LED_PORT &= ~_BV(LED_GREEN_R);
+			LED_PORT |=  _BV(LED_GREEN_L);
+		}
+		else
+		{
+			LED_PORT &= ~_BV(LED_GREEN_L);
+			LED_PORT |=  _BV(LED_GREEN_R);
+		}
+		LED_PORT &= ~_BV(LED_RED);
 
-    if (  (bFrediVersion == FREDI_VERSION_ANALOG)
-          && (!fSetSpeed))                 // if analog value does not correspond, show blinking
-    {
-      bLEDReload = LED_BLINK_TIME;
-    }
-    else
-    {
-      bLEDReload = LED_ON;
-    }
-    break;
+		if (  (bFrediVersion == FREDI_VERSION_ANALOG)
+		&& (!fSetSpeed))                 // if analog value does not correspond, show blinking
+		{
+			bLEDReload = LED_BLINK_TIME;
+		}
+		else
+		{
+			bLEDReload = LED_ON;
+		}
+		break;
 
-  case THR_STATE_ACQUIRE_LOCO_GET:
-  case THR_STATE_ACQUIRE_LOCO_WRITE:
-  case THR_STATE_RECONNECT_GET_SLOT:
-  case THR_STATE_RECONNECT_NULL_MOVE:
-  case THR_STATE_RECONNECT_WRITE:
-    bLEDReload = LED_BLINK_TIME;
-    break;
-  case THR_STATE_SELFTEST:
-    bLEDReload = LED_SELFTEST_TIME;
-    break;
-  case THR_STATE_SELFTEST_DONE:
-    bLEDReload = LED_SELFTEST_DONE_TIME;
-    break;
-  default:                                 // not allowed state, show by slow blinking
-    bLEDReload = (LED_BLINK_TIME*10);
-    break;
-  }
+		case THR_STATE_ACQUIRE_LOCO_GET:
+		case THR_STATE_ACQUIRE_LOCO_WRITE:
+		case THR_STATE_RECONNECT_GET_SLOT:
+		case THR_STATE_RECONNECT_NULL_MOVE:
+		case THR_STATE_RECONNECT_WRITE:
+		bLEDReload = LED_BLINK_TIME;
+		break;
+		case THR_STATE_SELFTEST:
+		bLEDReload = LED_SELFTEST_TIME;
+		break;
+		case THR_STATE_SELFTEST_DONE:
+		bLEDReload = LED_SELFTEST_DONE_TIME;
+		break;
+		default:                                 // not allowed state, show by slow blinking
+		bLEDReload = (LED_BLINK_TIME*10);
+		break;
+	}
 
-  resetTimerAction(&LEDTimer, bLEDReload);
-}  
+	resetTimerAction(&LEDTimer, bLEDReload);
+}
 
 
 /******************************************************FunctionHeaderBegin******
@@ -1362,9 +1365,9 @@ void vProcessKey(rwSlotDataMsg *currentSlot)
             default:                    break;
             }
 
-            if (bSet != currentSlot.dirf)
+            if (bSet != currentSlot->dirf)
             {
-              currentSlot.dirf = bSet; 
+              currentSlot->dirf = bSet; 
               sendLocoNetDirf(&currentSlot);
             }
           } // end of else if(bCurrentKey & Key_SHIFT)
@@ -1541,9 +1544,9 @@ void vProcessPoti(rwSlotDataMsg *currentSlot)
  * RETURN VALUE: none
  * NOTES       :   -
  *******************************************************FunctionHeaderEnd******/
-void sendLocoNetSpd(rwSlotDataMsg *pSlot)
+void sendLocoNetSpd(rwSlotDataMsg *currentSlot)
 {
-  sendLocoNet4BytePacket(OPC_LOCO_SPD,pSlot->slot,pSlot->spd);
+  sendLocoNet4BytePacket(OPC_LOCO_SPD,currentSlot->slot,currentSlot->spd);
   resetTimerAction(&MessageTimer, SPEED_TIME);
 }
 
@@ -1556,9 +1559,9 @@ void sendLocoNetSpd(rwSlotDataMsg *pSlot)
  * RETURN VALUE: none
  * NOTES       :   -
  *******************************************************FunctionHeaderEnd******/
-void sendLocoNetDirf(rwSlotDataMsg *pSlot)
+void sendLocoNetDirf(rwSlotDataMsg *currentSlot)
 {
-  sendLocoNet4BytePacket(OPC_LOCO_DIRF,pSlot->slot,pSlot->dirf);
+  sendLocoNet4BytePacket(OPC_LOCO_DIRF,currentSlot->slot,currentSlot->dirf);
 }
 
 /******************************************************FunctionHeaderBegin******
@@ -1570,9 +1573,9 @@ void sendLocoNetDirf(rwSlotDataMsg *pSlot)
  * RETURN VALUE: none
  * NOTES       :   -
  *******************************************************FunctionHeaderEnd******/
-void sendLocoNetSnd(rwSlotDataMsg *pSlot)
+void sendLocoNetSnd(rwSlotDataMsg *currentSlot)
 {
-  sendLocoNet4BytePacket(OPC_LOCO_SND,pSlot->slot,pSlot->snd);
+  sendLocoNet4BytePacket(OPC_LOCO_SND,currentSlot->slot,currentSlot->snd);
 }
 
 /******************************************************FunctionHeaderBegin******
@@ -1584,23 +1587,23 @@ void sendLocoNetSnd(rwSlotDataMsg *pSlot)
  * RETURN VALUE: none
  * NOTES       :   -
  *******************************************************FunctionHeaderEnd******/
-void sendLocoNetWriteSlotData(rwSlotDataMsg *pSlot)
+void sendLocoNetWriteSlotData(rwSlotDataMsg *currentSlot)
 {
   lnMsg SendPacket ;
 
   SendPacket.sd.command   = OPC_WR_SL_DATA  ; //opcode
   SendPacket.sd.mesg_size = 14              ; // length
-  SendPacket.sd.slot      = pSlot->slot   ; // slot    2    
-  SendPacket.sd.stat      = pSlot->stat   ; // stat    3    
-  SendPacket.sd.adr       = pSlot->adr    ; // adr     4    
-  SendPacket.sd.spd       = pSlot->spd    ; // spd     5    
-  SendPacket.sd.dirf      = pSlot->dirf   ; // dirf    6    
-  SendPacket.sd.trk       = pSlot->trk    ; // trk     7    
-  SendPacket.sd.ss2       = pSlot->ss2    ; // ss2     8    
-  SendPacket.sd.adr2      = pSlot->adr2   ; // adr2    9    
-  SendPacket.sd.snd       = pSlot->snd    ; // snd    10    
-  SendPacket.sd.id1       = pSlot->id1    ; // id1    11   
-  SendPacket.sd.id2       = pSlot->id2    ; // id2    12   
+  SendPacket.sd.slot      = currentSlot->slot   ; // slot    2    
+  SendPacket.sd.stat      = currentSlot->stat   ; // stat    3    
+  SendPacket.sd.adr       = currentSlot->adr    ; // adr     4    
+  SendPacket.sd.spd       = currentSlot->spd    ; // spd     5    
+  SendPacket.sd.dirf      = currentSlot->dirf   ; // dirf    6    
+  SendPacket.sd.trk       = currentSlot->trk    ; // trk     7    
+  SendPacket.sd.ss2       = currentSlot->ss2    ; // ss2     8    
+  SendPacket.sd.adr2      = currentSlot->adr2   ; // adr2    9    
+  SendPacket.sd.snd       = currentSlot->snd    ; // snd    10    
+  SendPacket.sd.id1       = currentSlot->id1    ; // id1    11   
+  SendPacket.sd.id2       = currentSlot->id2    ; // id2    12   
 
   if (sendLocoNetPacket( &SendPacket ) != LN_DONE)
   { // send message failed, so set new state
@@ -1662,9 +1665,9 @@ void sendLocoNetMove(byte bSrc, byte bDest)
  * RETURN VALUE: none
  * NOTES       :   -
  *******************************************************FunctionHeaderEnd******/
-void sendLocoNetAdr(rwSlotDataMsg *pSlot)
+void sendLocoNetAdr(rwSlotDataMsg *currentSlot)
 {
-  if (sendLocoNet4BytePacket(OPC_LOCO_ADR, rSlot.adr2, rSlot.adr) != LN_DONE)
+  if (sendLocoNet4BytePacket(OPC_LOCO_ADR, currentSlot->adr2, currentSlot->adr) != LN_DONE)
   {
     resetTimerAction(&MessageTimer, MESSAGE_TIME);
   }
@@ -1779,58 +1782,58 @@ void vCheckSelfTestEnd(void)
  * RETURN VALUE: none
  * NOTES       :   -
  *******************************************************FunctionHeaderEnd******/
-void vCopySlotFromRxPacket(void)
+void vCopySlotFromRxPacket(rwSlotDataMsg *currentSlot)
 {
-  byte i;                                               // needed for GET_SPDCNT_BY_SLOTSPD
+	byte i;                                               // needed for GET_SPDCNT_BY_SLOTSPD
 
-  if (bThrState == THR_STATE_ACQUIRE_LOCO_GET)
-  {
-    rSlot.stat    = RxPacket->data[ 3];                 // slot status
-    rSlot.adr     = RxPacket->data[ 4];                 // loco address
-    rSlot.adr2    = RxPacket->data[ 9];                 // loco address high
-  }
-  else
-  {
-    rSlot.stat    |= RxPacket->data[ 3] & ~DEC_MODE_MASK; // slot status
-  }
+	if (bThrState == THR_STATE_ACQUIRE_LOCO_GET)
+	{
+		currentSlot->stat    = RxPacket->data[ 3];                 // slot status
+		currentSlot->adr     = RxPacket->data[ 4];                 // loco address
+		currentSlot->adr2    = RxPacket->data[ 9];                 // loco address high
+	}
+	else
+	{
+		currentSlot->stat    |= RxPacket->data[ 3] & ~DEC_MODE_MASK; // slot status
+	}
 
-  rSlot.slot      = RxPacket->data[ 2];                 // slot number for this request
+	currentSlot->slot      = RxPacket->data[ 2];                 // slot number for this request
 
-  if (  (bFrediVersion == FREDI_VERSION_INCREMENT_SWITCH)      
-        || (bFrediVersion == FREDI_VERSION_ANALOG          ))
-  {
-    rSlot.dirf = RxPacket->data[ 6] & ~0x20;            // get direction by switch position                          
+	if (  (bFrediVersion == FREDI_VERSION_INCREMENT_SWITCH)
+	|| (bFrediVersion == FREDI_VERSION_ANALOG          ))
+	{
+		currentSlot->dirf = RxPacket->data[ 6] & ~0x20;            // get direction by switch position
 
-    if (bCurrentKey & Key_Dir)
-    {
-      rSlot.dirf |=  0x20;                                    
-    }
+		if (bCurrentKey & Key_Dir)
+		{
+			currentSlot->dirf |=  0x20;
+		}
 
-    if ((rSlot.dirf & 0x20) != (RxPacket->data[ 6] & 0x20)) // compare Fredi direction with slot direction
-    {
-      rSlot.spd = 1;                                    // direction isn't matching so stop train 
-      fSetSpeed = FALSE;                                // and show blinking
-    }
-    else if (bFrediVersion == FREDI_VERSION_ANALOG)
-    {
-      rSlot.spd = potAdcSpeedValue;                     // direction is matching, get speed by poti
-    }
-    else
-    {
-      rSlot.spd = RxPacket->data[ 5];                   // a increment-switch-Fredi takes speed from slot
-    }                                                         
-  }
-  else
-  {
-    rSlot.spd   = RxPacket->data[ 5];                   // command speed
-    rSlot.dirf  = RxPacket->data[ 6];                   // direction and function keys
-  }                                                           
+		if ((currentSlot->dirf & 0x20) != (RxPacket->data[ 6] & 0x20)) // compare Fredi direction with slot direction
+		{
+			currentSlot->spd = 1;                                    // direction isn't matching so stop train
+			fSetSpeed = FALSE;                                // and show blinking
+		}
+		else if (bFrediVersion == FREDI_VERSION_ANALOG)
+		{
+			currentSlot->spd = potAdcSpeedValue;                     // direction is matching, get speed by poti
+		}
+		else
+		{
+			currentSlot->spd = RxPacket->data[ 5];                   // a increment-switch-Fredi takes speed from slot
+		}
+	}
+	else
+	{
+		currentSlot->spd   = RxPacket->data[ 5];                   // command speed
+		currentSlot->dirf  = RxPacket->data[ 6];                   // direction and function keys
+	}
 
-  rSlot.trk       = RxPacket->data[ 7];                 // track status
-  rSlot.ss2       = RxPacket->data[ 8];                 // slot status 2 (tells how to use ID1/ID2 & ADV Consist
-  rSlot.snd       = RxPacket->data[10];                 // Sound 1-4 / F5-F8
+	currentSlot->trk       = RxPacket->data[ 7];                 // track status
+	currentSlot->ss2       = RxPacket->data[ 8];                 // slot status 2 (tells how to use ID1/ID2 & ADV Consist
+	currentSlot->snd       = RxPacket->data[10];                 // Sound 1-4 / F5-F8
 
-  GET_SPDCNT_BY_SLOTSPD                                 // calculate real speed
+	GET_SPDCNT_BY_SLOTSPD                                 // calculate real speed
 }
 
 /******************************************************FunctionHeaderBegin******
@@ -1842,13 +1845,13 @@ void vCopySlotFromRxPacket(void)
  * RETURN VALUE: none
  * NOTES       :   -
  *******************************************************FunctionHeaderEnd******/
-void vSetUnconnected(void)
+void vSetUnconnected(rwSlotDataMsg *currentSlot)
 {
-  rSlot.adr   = 0;
-  rSlot.adr2  = 0;
+  currentSlot->adr   = 0;
+  currentSlot->adr2  = 0;
 
-  eeprom_write_byte(&abEEPROM[EEPROM_ADR_LOCO_LB],  rSlot.adr);
-  eeprom_write_byte(&abEEPROM[EEPROM_ADR_LOCO_HB],  rSlot.adr2);
+  eeprom_write_byte(&abEEPROM[EEPROM_ADR_LOCO_LB],  currentSlot->adr);
+  eeprom_write_byte(&abEEPROM[EEPROM_ADR_LOCO_HB],  currentSlot->adr2);
   eeprom_write_byte(&abEEPROM[EEPROM_DECODER_TYPE], EEPROM_DECODER_TYPE_DEFAULT);
 
   vSetState(THR_STATE_UNCONNECTED);
