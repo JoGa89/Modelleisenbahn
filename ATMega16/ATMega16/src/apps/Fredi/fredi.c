@@ -121,8 +121,7 @@ void vProcessRxMonitorMessage(void);
 void vProcessKey(rwSlotDataMsg *currentSlot);
 void vProcessEncoder(rwSlotDataMsg *currentSlot);
 void vProcessPoti(rwSlotDataMsg *currentSlot);
-void vCheckSelfTestEnd(void);
-
+void vCheckSelfTestEnd(rwSlotDataMsg *currentSlot);
 void vCopySlotFromRxPacket(rwSlotDataMsg *currentSlot);
 void vSetUnconnected(rwSlotDataMsg *currentSlot);
 
@@ -130,12 +129,20 @@ void sendLocoNetSpd(rwSlotDataMsg *currentSlot);
 void sendLocoNetDirf(rwSlotDataMsg *currentSlot);
 void sendLocoNetSnd(rwSlotDataMsg *currentSlot);
 void sendLocoNetWriteSlotData(rwSlotDataMsg *currentSlot);
-void sendLocoNetMove(byte bSrc, byte bDest);
+void sendLocoNetMove(byte bSrc, byte bDest, rwSlotDataMsg *currentSlot);
 void sendLocoNetAdr(rwSlotDataMsg *currentSlot);
 //void sendLocoNetSelfTest(byte bTestCase, byte bValue);
 void sendLocoNetFredAdc( uint16_t raw );
 void sendLocoNetFredCd( uint8_t cdTime );
 void sendLocoNetFredButton( uint8_t button );
+
+void GET_SPDCNT_BY_SLOTSPD (rwSlotDataMsg *currentSlot);
+byte IncrementTimerAction( void *UserPointer);
+byte LEDTimerAction( void *UserPointer);
+byte KeyTimerAction( void *UserPointer);
+byte MessageTimerAction( void *UserPointer);
+byte ReleaseStopTimerAction( void *UserPointer);
+void initKeys( void );
 
 /******************************************************************************/
 // main defines & variables
@@ -227,9 +234,10 @@ lnMsg *RxPacket;
 //word      RxMsgCount ;
 lnMsg TxPacket;
 
-static int numberOfSlots = 1; //number of slots to be managed by the device
+#define NUMBER_OF_SLOTS 1 //number of slots to be managed by the device
 rwSlotDataMsg rSlot;
-
+struct rwslotdata_t slotArray[NUMBER_OF_SLOTS];
+int8_t		slotnumber = 0;
 /******************************************************************************/
 // timer
 /******************************************************************************/
@@ -308,7 +316,7 @@ byte IncrementTimerAction( void *UserPointer)
  * ARGUMENTS   : void *UserPointer
  * RETURN VALUE: byte, depence on blinkfrequency
  *******************************************************FunctionHeaderEnd******/
-byte LEDTimerAction( void *UserPointer, rwSlotDataMsg *currentSlot)
+byte LEDTimerAction( void *UserPointer)
 {
 	/******************************************************************************/
 	// mismatching speed
@@ -318,7 +326,7 @@ byte LEDTimerAction( void *UserPointer, rwSlotDataMsg *currentSlot)
 		if (  (bFrediVersion == FREDI_VERSION_ANALOG)
 		&& (!fSetSpeed))                         // if analog value does not correspond, show blinking
 		{
-			if (currentSlot->spd > potAdcSpeedValue)         // speed is higher than position of poti
+			if (slotArray[slotnumber].spd > potAdcSpeedValue)         // speed is higher than position of poti
 			{
 				// -> speed up (turn right)
 				if (bit_is_clear(LED_PORT, LED_GREEN_R))
@@ -506,14 +514,14 @@ byte KeyTimerAction( void *UserPointer)
  * ARGUMENTS   : void *UserPointer
  * RETURN VALUE: byte
  *******************************************************FunctionHeaderEnd******/
-byte MessageTimerAction( void *UserPointer, rwSlotDataMsg *currentSlot)
+byte MessageTimerAction( void *UserPointer)
 {
 	byte bRetVal = MESSAGE_TIME;
 
 	switch (bThrState)
 	{
 		case THR_STATE_CONNECTED:
-		sendLocoNet4BytePacket(OPC_LOCO_SPD,currentSlot->slot,currentSlot->spd);
+		sendLocoNet4BytePacket(OPC_LOCO_SPD,slotArray[slotnumber].slot,slotArray[slotnumber].spd);
 		bRetVal = SPEED_TIME;
 		break;
 		case THR_STATE_ACQUIRE_LOCO_GET:
@@ -521,8 +529,8 @@ byte MessageTimerAction( void *UserPointer, rwSlotDataMsg *currentSlot)
 		case THR_STATE_RECONNECT_GET_SLOT:
 		case THR_STATE_RECONNECT_WRITE:
 		case THR_STATE_RECONNECT_NULL_MOVE:
-		vSetState(THR_STATE_RECONNECT_GET_SLOT);
-		if (sendLocoNet4BytePacket(OPC_LOCO_ADR, currentSlot->adr2, currentSlot->adr) != LN_DONE)
+		vSetState(THR_STATE_RECONNECT_GET_SLOT, &slotArray[slotnumber]);
+		if (sendLocoNet4BytePacket(OPC_LOCO_ADR, slotArray[slotnumber].adr2, slotArray[slotnumber].adr) != LN_DONE)
 		{
 			bRetVal = MESSAGE_TIME;
 		}
@@ -537,17 +545,17 @@ byte MessageTimerAction( void *UserPointer, rwSlotDataMsg *currentSlot)
 
 			SendPacket.sd.command   = OPC_WR_SL_DATA  ; //opcode
 			SendPacket.sd.mesg_size = 14              ; // length
-			SendPacket.sd.slot      = currentSlot->slot      ; // slot    2
-			SendPacket.sd.stat      = currentSlot->stat      ; // stat    3
-			SendPacket.sd.adr       = currentSlot->adr       ; // adr     4
-			SendPacket.sd.spd       = currentSlot->spd       ; // spd     5
-			SendPacket.sd.dirf      = currentSlot->dirf      ; // dirf    6
-			SendPacket.sd.trk       = currentSlot->trk       ; // trk     7
-			SendPacket.sd.ss2       = currentSlot->ss2       ; // ss2     8
-			SendPacket.sd.adr2      = currentSlot->adr2      ; // adr2    9
-			SendPacket.sd.snd       = currentSlot->snd       ; // snd    10
-			SendPacket.sd.id1       = currentSlot->id1       ; // id1    11
-			SendPacket.sd.id2       = currentSlot->id2       ; // id2    12
+			SendPacket.sd.slot      = slotArray[slotnumber].slot      ; // slot    2
+			SendPacket.sd.stat      = slotArray[slotnumber].stat      ; // stat    3
+			SendPacket.sd.adr       = slotArray[slotnumber].adr       ; // adr     4
+			SendPacket.sd.spd       = slotArray[slotnumber].spd       ; // spd     5
+			SendPacket.sd.dirf      = slotArray[slotnumber].dirf      ; // dirf    6
+			SendPacket.sd.trk       = slotArray[slotnumber].trk       ; // trk     7
+			SendPacket.sd.ss2       = slotArray[slotnumber].ss2       ; // ss2     8
+			SendPacket.sd.adr2      = slotArray[slotnumber].adr2      ; // adr2    9
+			SendPacket.sd.snd       = slotArray[slotnumber].snd       ; // snd    10
+			SendPacket.sd.id1       = slotArray[slotnumber].id1       ; // id1    11
+			SendPacket.sd.id2       = slotArray[slotnumber].id2       ; // id2    12
 
 			LN_STATUS status = sendLocoNetPacket( &SendPacket );
 
@@ -614,7 +622,7 @@ void initKeys( void )
     // detect actual state of pin to set next interrupt edge
     ENC_ISC_REG |= _BV(ENC_ISC_BIT1);
 
-    if ( bit_is_set(ENC_PIN, ENC_BIT_1))
+    if (bit_is_set(ENC_PIN, ENC_BIT_1))
     { // set falling edge
       ENC_ISC_REG &= ~_BV(ENC_ISC_BIT0);
     }
@@ -664,7 +672,7 @@ void initKeys( void )
   /***************************************/
   //  init LEDs
   /***************************************/
-
+/*
   LED_DDR  |=  _BV(LED_GREEN_L); 
   LED_PORT &= ~_BV(LED_GREEN_L); 
 
@@ -673,8 +681,8 @@ void initKeys( void )
 
   LED_DDR  |=  _BV(LED_RED); 
   LED_PORT |= _BV(LED_RED);       // set red LED at startup
-
-  addTimerAction(&LEDTimer, LED_BLINK_TIME, LEDTimerAction, 0, TIMER_SLOW ) ;
+*/
+ // addTimerAction(&LEDTimer, LED_BLINK_TIME, LEDTimerAction, 0, TIMER_SLOW ) ;
 }
 
 
@@ -815,7 +823,7 @@ int main(void)
   DDRC  &= ~_BV(DDC5); // set version detector to tristate to get kind of fredi
   PORTC |=  _BV(PC5);
 
-  if ( bit_is_set(PINC, PINC5))
+  if (bit_is_set(PINC, PINC5))
   {
     bFrediVersion = FREDI_VERSION_ANALOG;
   }
@@ -844,7 +852,7 @@ int main(void)
 
   if ((eeprom_read_byte(&abEEPROM[EEPROM_IMAGE]) != EEPROM_IMAGE_DEFAULT))
   {
-    vSetState(THR_STATE_SELFTEST);
+    vSetState(THR_STATE_SELFTEST, &rSlot);
 
     eeprom_write_byte(&abEEPROM[EEPROM_ADR_LOCO_LB], 0);                 // no loco active at selftest
     eeprom_write_byte(&abEEPROM[EEPROM_ADR_LOCO_HB], 0);
@@ -876,7 +884,7 @@ int main(void)
       eeprom_write_byte(&abEEPROM[EEPROM_SW_YEAR],     SW_YEAR);
     }
 
-    vSetState(THR_STATE_INIT);
+    vSetState(THR_STATE_INIT, &rSlot);
     rSlot.adr   = eeprom_read_byte(&abEEPROM[EEPROM_ADR_LOCO_LB]);
     rSlot.adr2  = eeprom_read_byte(&abEEPROM[EEPROM_ADR_LOCO_HB]);
     rSlot.stat  = eeprom_read_byte(&abEEPROM[EEPROM_DECODER_TYPE]);
@@ -944,8 +952,8 @@ int main(void)
 
   initKeys();
   initTimer();
-
-  addTimerAction(&MessageTimer, 0, MessageTimerAction, 0, TIMER_SLOW ) ;
+ 
+  addTimerAction(&MessageTimer, 0, MessageTimerAction, 0, TIMER_SLOW) ;
 
   /***************************************/
   //  set state and start interrupts
@@ -958,11 +966,11 @@ int main(void)
     // if a address for a loco is available, show blinking state
     if ((rSlot.adr != 0) || (rSlot.adr2 != 0))
     {
-      vSetState(THR_STATE_RECONNECT_GET_SLOT);
+      vSetState(THR_STATE_RECONNECT_GET_SLOT, &rSlot);
     }
     else
     {
-      vSetState(THR_STATE_UNCONNECTED);
+      vSetState(THR_STATE_UNCONNECTED, &rSlot);
     }
 
     while (bit_is_clear(ACSR, ACO))     // wait for start of loconet
@@ -1003,7 +1011,9 @@ int main(void)
 
   while (1)
   {
-	for (int i = 0; i < numberOfSlots; i++) {  
+	  
+	  
+	for (int i = 0; i < NUMBER_OF_SLOTS; i++) {  
 		vProcessRxLoconetMessage(&rSlot);
 		vProcessKey(&rSlot);
 		vProcessRxLoconetMessage(&rSlot);
@@ -1033,7 +1043,7 @@ int main(void)
  *******************************************************FunctionHeaderEnd******/
 void vProcessRxLoconetMessage(rwSlotDataMsg *currentSlot)
 {
-  RxPacket = recvLocoNetPacket() ;
+  RxPacket = recvLocoNetPacket();
 
   if (RxPacket)
   {
@@ -1049,9 +1059,9 @@ void vProcessRxLoconetMessage(rwSlotDataMsg *currentSlot)
         {
           if ((RxPacket->data[3] & LOCO_IDLE) == LOCO_IDLE)
           {
-            vCopySlotFromRxPacket();
-            vSetState(THR_STATE_ACQUIRE_LOCO_WRITE);
-            sendLocoNetWriteSlotData(&currentSlot);
+            vCopySlotFromRxPacket(currentSlot);
+            vSetState(THR_STATE_ACQUIRE_LOCO_WRITE, currentSlot);
+            sendLocoNetWriteSlotData(currentSlot);
           }
         }
         break;
@@ -1065,19 +1075,19 @@ void vProcessRxLoconetMessage(rwSlotDataMsg *currentSlot)
               if (  (  (currentSlot->id1 == RxPacket->data[11]) && (currentSlot->id2 == RxPacket->data[12]))
                  || (  (0         == RxPacket->data[11]) && (0         == RxPacket->data[12])))
               {
-                vCopySlotFromRxPacket();
-                vSetState(THR_STATE_RECONNECT_WRITE);
-                sendLocoNetWriteSlotData(&currentSlot);
+                vCopySlotFromRxPacket(currentSlot);
+                vSetState(THR_STATE_RECONNECT_WRITE, currentSlot);
+                sendLocoNetWriteSlotData(currentSlot);
               }
               else
               {
-                vSetUnconnected();
+                vSetUnconnected(currentSlot);
               }
             }
             else
             {
-              vSetState(THR_STATE_RECONNECT_NULL_MOVE);
-              sendLocoNetMove(RxPacket->data[2], RxPacket->data[2]);
+              vSetState(THR_STATE_RECONNECT_NULL_MOVE, currentSlot);
+              sendLocoNetMove(RxPacket->data[2], RxPacket->data[2], currentSlot);
             }
           }
         }
@@ -1089,13 +1099,13 @@ void vProcessRxLoconetMessage(rwSlotDataMsg *currentSlot)
           { // slot not changed and in use , so we can use this slot further on
             if ((RxPacket->data[3] & LOCO_IN_USE) == LOCO_IN_USE)
             {
-              vCopySlotFromRxPacket();
-              vSetState(THR_STATE_RECONNECT_WRITE);
-              sendLocoNetWriteSlotData(&currentSlot);
+              vCopySlotFromRxPacket(currentSlot);
+              vSetState(THR_STATE_RECONNECT_WRITE, currentSlot);
+              sendLocoNetWriteSlotData(currentSlot);
             }
             else
             {
-              vSetUnconnected();
+              vSetUnconnected(currentSlot);
             }
           }
         }
@@ -1111,7 +1121,7 @@ void vProcessRxLoconetMessage(rwSlotDataMsg *currentSlot)
       case THR_STATE_UNCONNECTED_WRITE:
         if (RxPacket->data[1] == (OPC_WR_SL_DATA & 0x7f))
         {
-          vSetUnconnected();
+          vSetUnconnected(currentSlot);
         }
         break;
       case THR_STATE_RECONNECT_WRITE: // response of Get Slot By Adress
@@ -1122,11 +1132,11 @@ void vProcessRxLoconetMessage(rwSlotDataMsg *currentSlot)
           eeprom_write_byte(&abEEPROM[EEPROM_ADR_LOCO_HB],  currentSlot->adr2);
           eeprom_write_byte(&abEEPROM[EEPROM_DECODER_TYPE], currentSlot->stat & DEC_MODE_MASK);
 
-          vSetState(THR_STATE_CONNECTED);
+          vSetState(THR_STATE_CONNECTED, currentSlot);
         }
         break;
       case THR_STATE_ACQUIRE_LOCO_GET: // response of Dispatch Get
-        vSetUnconnected();
+        vSetUnconnected(currentSlot);
         break;
       }
       break;
@@ -1137,11 +1147,9 @@ void vProcessRxLoconetMessage(rwSlotDataMsg *currentSlot)
       if (  (bThrState         == THR_STATE_CONNECTED)
          && (RxPacket->data[1] == currentSlot->slot         ))
       {
-        int i;
-
         currentSlot->spd = RxPacket->data[2];
         
-        GET_SPDCNT_BY_SLOTSPD
+        GET_SPDCNT_BY_SLOTSPD(currentSlot);
       }
       break;
 /***************************************/
@@ -1161,7 +1169,7 @@ void vProcessRxLoconetMessage(rwSlotDataMsg *currentSlot)
           {
             currentSlot->dirf &= 0x20;                       // get direction of fredi
             currentSlot->dirf |= (RxPacket->data[2] & ~0x20); // and add F0..F4
-            sendLocoNetDirf(&currentSlot);
+            sendLocoNetDirf(currentSlot);
           }
           else
           {
@@ -1251,12 +1259,12 @@ void vProcessKey(rwSlotDataMsg *currentSlot)
                 && (currentSlot->spd > 1))
           {
             fSetSpeed = FALSE;
-            vSetState(THR_STATE_CONNECTED);
+            vSetState(THR_STATE_CONNECTED, currentSlot);
           }
 
           currentSlot->spd = 1; // Not stop
 
-          sendLocoNetSpd(&currentSlot);
+          sendLocoNetSpd(currentSlot);
 
           if (bCurrentKey & Key_Dir)
           { // dir switch was pressed
@@ -1270,7 +1278,7 @@ void vProcessKey(rwSlotDataMsg *currentSlot)
             LED_PORT &= ~_BV(LED_GREEN_R);
             LED_PORT |=  _BV(LED_GREEN_L); 
           }
-          sendLocoNetDirf(&currentSlot);
+          sendLocoNetDirf(currentSlot);
 
           // Fredi is connected, so this causes an sendLocoNetSpd after 100ms
           // it seems to be the last sendLocoNetSpd is ignored by intellibox in some cases
@@ -1290,9 +1298,9 @@ void vProcessKey(rwSlotDataMsg *currentSlot)
             case (Key_Stop | Key_SHIFT): // undispatch
               currentSlot->stat = 0x20;
 
-              vSetState(THR_STATE_UNCONNECTED_WRITE);
+              vSetState(THR_STATE_UNCONNECTED_WRITE, currentSlot);
 
-              sendLocoNetWriteSlotData(&currentSlot);
+              sendLocoNetWriteSlotData(currentSlot);
               break;
             case Key_F5:  bSet ^= 0x01; break;
             case Key_F6:  bSet ^= 0x02; break;
@@ -1304,7 +1312,7 @@ void vProcessKey(rwSlotDataMsg *currentSlot)
             if (bSet != currentSlot->snd)
             {
               currentSlot->snd = bSet; 
-              sendLocoNetSnd(&currentSlot);
+              sendLocoNetSnd(currentSlot);
             }
           }
           else
@@ -1321,7 +1329,7 @@ void vProcessKey(rwSlotDataMsg *currentSlot)
                  && (currentSlot->spd > 1))
               {
                 fSetSpeed = FALSE;                // show blinking LED
-                vSetState(THR_STATE_CONNECTED);
+                vSetState(THR_STATE_CONNECTED, currentSlot);
               }
 							else
 							{
@@ -1337,7 +1345,7 @@ void vProcessKey(rwSlotDataMsg *currentSlot)
 								currentSlot->spd = 0;                      // Normal stop
 							}
 
-              sendLocoNetSpd(&currentSlot);
+              sendLocoNetSpd(currentSlot);
 
               if (bFrediVersion == FREDI_VERSION_INCREMENT) // invert direction
               {
@@ -1368,7 +1376,7 @@ void vProcessKey(rwSlotDataMsg *currentSlot)
             if (bSet != currentSlot->dirf)
             {
               currentSlot->dirf = bSet; 
-              sendLocoNetDirf(&currentSlot);
+              sendLocoNetDirf(currentSlot);
             }
           } // end of else if(bCurrentKey & Key_SHIFT)
         } // end of if(bThrState == THR_STATE_CONNECTED)
@@ -1376,8 +1384,8 @@ void vProcessKey(rwSlotDataMsg *currentSlot)
         {
           if ((bCurrentKey & ~Key_Dir) == (Key_Stop | Key_SHIFT))   // try to dispatch
           {
-            vSetState(THR_STATE_ACQUIRE_LOCO_GET);
-            sendLocoNetMove(0, 0);
+            vSetState(THR_STATE_ACQUIRE_LOCO_GET, currentSlot);
+            sendLocoNetMove(0, 0, currentSlot);
           }
         }
         else
@@ -1386,9 +1394,9 @@ void vProcessKey(rwSlotDataMsg *currentSlot)
           {
             currentSlot->stat = 0x20;
 
-            vSetState(THR_STATE_UNCONNECTED_WRITE);
+            vSetState(THR_STATE_UNCONNECTED_WRITE, currentSlot);
 
-            sendLocoNetWriteSlotData(&currentSlot);
+            sendLocoNetWriteSlotData(currentSlot);
           }
         }
       }
@@ -1397,7 +1405,7 @@ void vProcessKey(rwSlotDataMsg *currentSlot)
     {
       wSelfTest |= (uint16_t) (bCurrentKey);
       sendLocoNetFredButton(bCurrentKey);
-      vCheckSelfTestEnd();
+      vCheckSelfTestEnd(currentSlot);
     }
 
     bLastCurrentkey = bCurrentKey;
@@ -1449,7 +1457,7 @@ void vProcessEncoder(rwSlotDataMsg *currentSlot)
       if (currentSlot->spd != abSpd[bSpdCnt])       // get speedvalue for incrementvalue
       {
         currentSlot->spd = abSpd[bSpdCnt];
-					sendLocoNetSpd(&currentSlot);           // anounce new speed value
+					sendLocoNetSpd(currentSlot);           // anounce new speed value
 				}
 			}
     }
@@ -1465,7 +1473,7 @@ void vProcessEncoder(rwSlotDataMsg *currentSlot)
       }
       sendLocoNetFredButton( sEncDir );
 
-      vCheckSelfTestEnd();
+      vCheckSelfTestEnd(currentSlot);
     }
 
     sEncDir = 0;
@@ -1501,13 +1509,13 @@ void vProcessPoti(rwSlotDataMsg *currentSlot)
       if (currentSlot->spd != bSpd)
       {
         currentSlot->spd = bSpd;
-        sendLocoNetSpd(&currentSlot);
+        sendLocoNetSpd(currentSlot);
       }
     }
 
     if (fOldSetSpeed != fSetSpeed)
     {
-      vSetState(THR_STATE_CONNECTED); // reset of blinking LEDs
+      vSetState(THR_STATE_CONNECTED, currentSlot); // reset of blinking LEDs
     }
   }
   else if (bThrState >= THR_STATE_SELFTEST)
@@ -1530,7 +1538,7 @@ void vProcessPoti(rwSlotDataMsg *currentSlot)
       sendLocoNetFredAdc( potAdcRawValue );
     }
 
-    vCheckSelfTestEnd();
+    vCheckSelfTestEnd(currentSlot);
   }
 }
 
@@ -1613,10 +1621,10 @@ void sendLocoNetWriteSlotData(rwSlotDataMsg *currentSlot)
     {
     case THR_STATE_ACQUIRE_LOCO_WRITE:
     case THR_STATE_RECONNECT_WRITE:
-      vSetState(THR_STATE_RECONNECT_GET_SLOT);
+      vSetState(THR_STATE_RECONNECT_GET_SLOT, currentSlot);
       break;
     case THR_STATE_UNCONNECTED_WRITE:
-      vSetState(THR_STATE_CONNECTED);
+      vSetState(THR_STATE_CONNECTED, currentSlot);
       break;
     }
   }
@@ -1635,7 +1643,7 @@ void sendLocoNetWriteSlotData(rwSlotDataMsg *currentSlot)
  * RETURN VALUE: none
  * NOTES       :   -
  *******************************************************FunctionHeaderEnd******/
-void sendLocoNetMove(byte bSrc, byte bDest)
+void sendLocoNetMove(byte bSrc, byte bDest, rwSlotDataMsg *currentSlot)
 {
   if (sendLocoNet4BytePacket(OPC_MOVE_SLOTS, bSrc, bDest) != LN_DONE)
   {
@@ -1643,11 +1651,11 @@ void sendLocoNetMove(byte bSrc, byte bDest)
     // send message failed, so set new state
     if (bThrState == THR_STATE_RECONNECT_NULL_MOVE)
     {
-      vSetState(THR_STATE_RECONNECT_GET_SLOT);
+      vSetState(THR_STATE_RECONNECT_GET_SLOT, currentSlot);
     }
     else
     {
-      vSetState(THR_STATE_UNCONNECTED);
+      vSetState(THR_STATE_UNCONNECTED, currentSlot);
     }
   }
   else
@@ -1734,7 +1742,7 @@ void sendLocoNetFredButton( uint8_t button )
  * RETURN VALUE: none
  * NOTES       :   -
  *******************************************************FunctionHeaderEnd******/
-void vCheckSelfTestEnd(void)
+void vCheckSelfTestEnd(rwSlotDataMsg *currentSlot)
 {
   byte fSelfTestEnd = FALSE;
 
@@ -1765,7 +1773,7 @@ void vCheckSelfTestEnd(void)
   if (  (fSelfTestEnd == TRUE)
      && (eeprom_read_byte(&abEEPROM[EEPROM_IMAGE]) != EEPROM_IMAGE_DEFAULT))
   {
-    vSetState(THR_STATE_SELFTEST_DONE);
+    vSetState(THR_STATE_SELFTEST_DONE, currentSlot);
     delayTimer( 100 ); // wait a little bit longer
     sendLocoNetFredButton( 0x7F );
 
@@ -1784,7 +1792,7 @@ void vCheckSelfTestEnd(void)
  *******************************************************FunctionHeaderEnd******/
 void vCopySlotFromRxPacket(rwSlotDataMsg *currentSlot)
 {
-	byte i;                                               // needed for GET_SPDCNT_BY_SLOTSPD
+	// byte i;                                               // needed for GET_SPDCNT_BY_SLOTSPD
 
 	if (bThrState == THR_STATE_ACQUIRE_LOCO_GET)
 	{
@@ -1833,7 +1841,7 @@ void vCopySlotFromRxPacket(rwSlotDataMsg *currentSlot)
 	currentSlot->ss2       = RxPacket->data[ 8];                 // slot status 2 (tells how to use ID1/ID2 & ADV Consist
 	currentSlot->snd       = RxPacket->data[10];                 // Sound 1-4 / F5-F8
 
-	GET_SPDCNT_BY_SLOTSPD                                 // calculate real speed
+	GET_SPDCNT_BY_SLOTSPD(currentSlot);                         // calculate real speed
 }
 
 /******************************************************FunctionHeaderBegin******
@@ -1854,6 +1862,6 @@ void vSetUnconnected(rwSlotDataMsg *currentSlot)
   eeprom_write_byte(&abEEPROM[EEPROM_ADR_LOCO_HB],  currentSlot->adr2);
   eeprom_write_byte(&abEEPROM[EEPROM_DECODER_TYPE], EEPROM_DECODER_TYPE_DEFAULT);
 
-  vSetState(THR_STATE_UNCONNECTED);
+  vSetState(THR_STATE_UNCONNECTED, currentSlot);
 }
 

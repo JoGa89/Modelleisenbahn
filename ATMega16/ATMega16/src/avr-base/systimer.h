@@ -52,7 +52,7 @@ void initTimer(void) ;
 
 void resetTimerAction( TimerAction *addAction, byte Ticks ) ;  
 
-void addTimerAction( TimerAction *addAction, byte Ticks, byte (*TickAction) ( void *UserPointer ), void *UserPointer, byte Fast ) ;  
+void addTimerAction( TimerAction *addAction, byte Ticks, byte (*TickAction) ( void *UserPointer ), void *UserPointer, byte Fast ) ;
 
 void delayTimer( word delayTicks ) ;
 

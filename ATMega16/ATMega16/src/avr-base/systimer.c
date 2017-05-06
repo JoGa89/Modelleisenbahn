@@ -97,7 +97,7 @@ void initTimer()
 	  
 }
 
-void addTimerAction( TimerAction *pAction, byte Ticks, byte (*TickAction) ( void *UserPointer ), void *UserPointer, byte Fast )
+void addTimerAction( TimerAction *pAction, byte Ticks, byte (*TickAction) (void *UserPointer), void *UserPointer, byte Fast )
 {
   byte  StatusReg ;
 
@@ -125,6 +125,8 @@ void addTimerAction( TimerAction *pAction, byte Ticks, byte (*TickAction) ( void
     // Enable Interrupts if they were on to start with
   SREG = StatusReg ;
 }
+
+
 
 void resetTimerAction( TimerAction *pAction, byte Ticks )
 {
