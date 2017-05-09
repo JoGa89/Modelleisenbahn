@@ -99,6 +99,7 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <avr/eeprom.h>     // #define EEMEM
+#include <util/delay.h>
 
 #include "sysdef.h"
 #include "common_defs.h"
@@ -234,8 +235,9 @@ lnMsg *RxPacket;
 //word      RxMsgCount ;
 lnMsg TxPacket;
 
-#define NUMBER_OF_SLOTS 1 //number of slots to be managed by the device
+#define NUMBER_OF_SLOTS 2 //number of slots to be managed by the device
 rwSlotDataMsg rSlot;
+rwSlotDataMsg rSlotZwei;
 struct rwslotdata_t slotArray[NUMBER_OF_SLOTS];
 int8_t		slotnumber = 0;
 /******************************************************************************/
@@ -820,8 +822,8 @@ int main(void)
   //  FrediVersion
   /***************************************/
 
-  DDRC  &= ~_BV(DDC5); // set version detector to tristate to get kind of fredi
-  PORTC |=  _BV(PC5);
+	 DDRC  &= ~_BV(DDC5); // set version detector to tristate to get kind of fredi
+	 PORTC |=  _BV(PC5);
 
   if (bit_is_set(PINC, PINC5))
   {
@@ -849,8 +851,23 @@ int main(void)
   rSlot.ss2       = 0;                        /* slot status 2 (tells how to use ID1/ID2 & ADV Consist*/
   rSlot.adr2      = 0;                        /* loco address high                                    */
   rSlot.snd       = 0;                        /* Sound 1-4 / F5-F8                                    */
+  
+  //-----------------------------------------------------------------RSLOTZWEI---------------------------------
+  
+  rSlotZwei.command   = OPC_WR_SL_DATA;
+  rSlotZwei.mesg_size = 14;
+  rSlotZwei.slot      = 0;                        /* slot number for this request                         */
+  rSlotZwei.stat      = 0;                        /* slot status                                          */
+  rSlotZwei.adr       = 0;                        /* loco address                                         */
+  rSlotZwei.spd       = 0;                        /* command speed                                        */
+  rSlotZwei.dirf      = 0;                        /* direction and F0-F4 bits                             */
+  rSlotZwei.trk       = 0;                        /* track status                                         */
+  rSlotZwei.ss2       = 0;                        /* slot status 2 (tells how to use ID1/ID2 & ADV Consist*/
+  rSlotZwei.adr2      = 0;                        /* loco address high                                    */
+  rSlotZwei.snd       = 0;                        /* Sound 1-4 / F5-F8                                    */
 
-  if ((eeprom_read_byte(&abEEPROM[EEPROM_IMAGE]) != EEPROM_IMAGE_DEFAULT))
+  
+   if ((eeprom_read_byte(&abEEPROM[EEPROM_IMAGE]) != EEPROM_IMAGE_DEFAULT))
   {
     vSetState(THR_STATE_SELFTEST, &rSlot);
 
@@ -890,10 +907,10 @@ int main(void)
     rSlot.stat  = eeprom_read_byte(&abEEPROM[EEPROM_DECODER_TYPE]);
   }
 
-  rSlot.id1   = eeprom_read_byte(&abEEPROM[EEPROM_ID1]); // get ID from EEPROM
-  rSlot.id2   = eeprom_read_byte(&abEEPROM[EEPROM_ID2]);
+	 rSlot.id1   = eeprom_read_byte(&abEEPROM[EEPROM_ID1]); // get ID from EEPROM
+	 rSlot.id2   = eeprom_read_byte(&abEEPROM[EEPROM_ID2]);
 
-  if ((rSlot.id1 & 0x80) || (rSlot.id2 & 0x80))
+/*  if ((rSlot.id1 & 0x80) || (rSlot.id2 & 0x80))
   { // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     // if no slot ID was programmed, you get the ID "0xff 0xff"
 		// or if an unguilty ID was programmed
@@ -906,7 +923,7 @@ int main(void)
     LED_DDR  |= _BV(LED_RED); 
     LED_PORT |= _BV(LED_RED);
     while (1);
-  }
+  } */
   
   #ifdef LOCONET_LEVEL_TEST
     LED_DDR  |= _BV(LED_GREEN_L);
@@ -1003,17 +1020,52 @@ int main(void)
   else
   {
     sendLocoNetFredCd( bCount );
-  }
+  }  
 
 /******************************************************************************/
 // main endless loop 
 /******************************************************************************/
-
+		  DDRC  |= (1<<PC4); 
+		  DDRC  |= (1<<PC3);
+		  DDRA  |= (1<<PA0); 
+		  DDRA  |= (1<<PA1);
   while (1)
   {
+
 	  
+	/*  if (bit_is_set(PINC,PINC1)) {
+		  PORTC |= _BV(PC4);
+	  }
 	  
-	for (int i = 0; i < NUMBER_OF_SLOTS; i++) {  
+	  if (bit_is_clear(PINC, PINC1)) {
+		PORTC &= ~_BV(PC4);
+	  }*/
+	  
+	  	  if (PINC & ( 1<<PC0 )) {  //richtungstaste4 gedrückt, dann LED 1 anschalten
+			//PORTC |= 1<<PC4;
+			PORTA |= 1<<PA0;			
+			//_delay_ms(10);
+	  	  }
+	  	  
+	  	  if (!(PINC & ( 1<<PC0 ))) {	//wenn richtungstaste4 nicht gedrückt, dann LED 1 ausschalten
+		  	  //PORTC &= ~(1<<PC4);
+			  PORTA &= ~(1<<PA0);				
+	  	  }
+		  
+	  	  if (PINA & ( 1<<PA3 )) {	//wenn richtungstaste 3 gedrückt, dann LED 2 anschalten
+		  	  //PORTC |= (1<<PC3);
+			  PORTA |= 1<<PA1;				
+				//_delay_ms(10);
+	  	  }
+	  	  
+	  	  if (!(PINA & ( 1<<PA3 ))) { //wenn richtungstaste3 nicht gedrückt, dann LED 2 aus
+		  	  //PORTC &= ~(1<<PC3);
+			  PORTA &= ~(1<<PA1);				
+	  	  }
+	  
+		
+	  
+/*	for (int i = 0; i < NUMBER_OF_SLOTS; i++) {  
 		vProcessRxLoconetMessage(&rSlot);
 		vProcessKey(&rSlot);
 		vProcessRxLoconetMessage(&rSlot);
@@ -1027,7 +1079,7 @@ int main(void)
 		}
 		vProcessRxLoconetMessage(&rSlot);
 		processTimerActions();
-	} //end of for
+	} */ //end of for
   } // end of while(1)
 } // end of main
 

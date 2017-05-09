@@ -55,28 +55,28 @@
         <documentation help="http://asf.atmel.com/docs/3.34.1/common.applications.user_application.stk600-mega.atmega16/html/index.html" />
         <offline-documentation help="" />
         <dependencies>
-          <content-extension eid="atmel.asf" uuidref="Atmel.ASF" version="3.34.1" />
+          <content-extension eid="atmel.asf" uuidref="Atmel.ASF" version="3.28.1" />
         </dependencies>
         <project id="common.applications.user_application.stk600-mega.atmega16" value="Add" config="" content-id="Atmel.ASF" />
         <board id="board.stk600-mega.atmega16" value="Add" config="" content-id="Atmel.ASF" />
       </framework-data>
     </AsfFrameworkConfig>
-    <avrtool>com.atmel.avrdbg.tool.simulator</avrtool>
+    <avrtool>com.atmel.avrdbg.tool.stk500</avrtool>
     <avrtoolserialnumber />
     <avrdeviceexpectedsignature>0x1E9403</avrdeviceexpectedsignature>
     <com_atmel_avrdbg_tool_stk500>
       <ToolOptions>
         <InterfaceProperties>
+          <IspClock>125000</IspClock>
         </InterfaceProperties>
-        <InterfaceName>
-        </InterfaceName>
+        <InterfaceName>ISP</InterfaceName>
       </ToolOptions>
       <ToolType>com.atmel.avrdbg.tool.stk500</ToolType>
       <ToolNumber>
       </ToolNumber>
       <ToolName>STK500</ToolName>
     </com_atmel_avrdbg_tool_stk500>
-    <avrtoolinterface />
+    <avrtoolinterface>ISP</avrtoolinterface>
     <com_atmel_avrdbg_tool_simulator>
       <ToolOptions xmlns="">
         <InterfaceProperties>
@@ -89,6 +89,7 @@
       </ToolNumber>
       <ToolName xmlns="">Simulator</ToolName>
     </com_atmel_avrdbg_tool_simulator>
+    <avrtoolinterfaceclock>125000</avrtoolinterfaceclock>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
     <ToolchainSettings>
@@ -114,6 +115,9 @@
             <Value>../src/ASF/common/utils</Value>
             <Value>../src</Value>
             <Value>../src/config</Value>
+            <Value>../src/apps/Fredi</Value>
+            <Value>../src/avr-base</Value>
+            <Value>../src/loconet</Value>
           </ListValues>
         </avrgcc.compiler.directories.IncludePaths>
         <avrgcc.compiler.optimization.level>Optimize for size (-Os)</avrgcc.compiler.optimization.level>
@@ -201,10 +205,10 @@
       </AvrGcc>
     </ToolchainSettings>
     <UsesExternalMakeFile>True</UsesExternalMakeFile>
-    <OutputDirectory>C:\Users\vghv-mobile\Documents\Atmel Studio\7.0\Modelleisenbahn-Team-2-WKR-\ATMega16\ATMega16\Debug</OutputDirectory>
+    <OutputDirectory>C:\Studium\8.Semester (SS17)\Teamprojekt\Quellcode\ATMega16-Team2\ATMega16\ATMega16\Debug</OutputDirectory>
     <BuildTarget>all</BuildTarget>
     <CleanTarget>clean</CleanTarget>
-    <ExternalMakeFilePath>C:\Users\vghv-mobile\Documents\Atmel Studio\7.0\Modelleisenbahn-Team-2-WKR-\ATMega16\ATMega16\Debug\Makefile</ExternalMakeFilePath>
+    <ExternalMakeFilePath>C:\Studium\8.Semester (SS17)\Teamprojekt\Quellcode\ATMega16-Team2\ATMega16\ATMega16\Debug\Makefile</ExternalMakeFilePath>
   </PropertyGroup>
   <ItemGroup>
     <Folder Include="src\" />
