@@ -249,6 +249,37 @@
 #define ENC_DDR         DDRD
 #define ENC_PIN         PIND
 
+//External Input Mapping
+
+//Regler 1 (von Links nach Rechts wenn LED unter den Schiebereglern sind)
+//insert schieberegler hier
+#define LED1		PA0 //PINA
+#define DIRKEY1		PC0 //PINC
+#define FUNKEY1		PC7	//PINC
+
+//Regler 2
+//insert Schieberegler hier
+#define LED2		PA1 //PINA
+#define DIRKEY2		PA3 //PINA
+#define FUNKEY2		PB0 //PINB
+
+//Regler 3
+//insert Schieberegler hier
+#define LED3		PC3 //PINC
+#define DIRKEY3		PC1 //PINC, Funktioniert nach mehreren Tastendrücken nichtmehr (Funktionswiederherstellung tum Teil durch Drücken anderer Taste)
+#define FUNKEY3		PB4 // PINB
+
+//Regler 4
+//insert Schieberegler hier
+#define LED4		PC4 //PINC
+#define DIRKEY4		PC2 //PINC, Scheinbar Kurzschluss zu LED2, Wenn im Code benutzt leuchtet LED1 dauerhaft??
+#define FUNKEY4		PA2 //PINA
+
+//Erweiterte Funktionstasten (Nummeriert von oben nach unten)
+#define ERW_FUNKEY1		PD3 //PIND
+//#define ERW_FUNKEY2		PD4 //PINDgibt dauerhaft 1 aus
+#define ERW_FUNKEY3		PD5 //PIND
+#define ERW_FUNKEY4		PD6 //PIND
 // encoder interrupt
 #if defined(__AVR_ATmega16__)
 

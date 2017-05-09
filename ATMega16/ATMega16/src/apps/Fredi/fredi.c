@@ -1041,26 +1041,26 @@ int main(void)
 		PORTC &= ~_BV(PC4);
 	  }*/
 	  
-	  	  if (PINC & ( 1<<PC0 )) {  //richtungstaste4 gedrückt, dann LED 1 anschalten
+	  	  if (PINC & ( 1<<DIRKEY4 )) {  //richtungstaste4 gedrückt, dann LED 1 anschalten
 			//PORTC |= 1<<PC4;
-			PORTA |= 1<<PA0;			
+			PORTA |= 1<<LED1;			
 			//_delay_ms(10);
 	  	  }
 	  	  
-	  	  if (!(PINC & ( 1<<PC0 ))) {	//wenn richtungstaste4 nicht gedrückt, dann LED 1 ausschalten
+	  	  if (!(PINC & ( 1<<DIRKEY4 ))) {	//wenn richtungstaste4 nicht gedrückt, dann LED 1 ausschalten
 		  	  //PORTC &= ~(1<<PC4);
-			  PORTA &= ~(1<<PA0);				
+			  PORTA &= ~(1<<LED1);				
 	  	  }
 		  
-	  	  if (PINA & ( 1<<PA3 )) {	//wenn richtungstaste 3 gedrückt, dann LED 2 anschalten
+	  	  if (PINC & ( 1<<DIRKEY3 )) {	//wenn richtungstaste 3 gedrückt, dann LED 2 anschalten
 		  	  //PORTC |= (1<<PC3);
-			  PORTA |= 1<<PA1;				
+			  PORTA |= 1<<LED2;				
 				//_delay_ms(10);
 	  	  }
 	  	  
-	  	  if (!(PINA & ( 1<<PA3 ))) { //wenn richtungstaste3 nicht gedrückt, dann LED 2 aus
+	  	  if (!(PINC & ( 1<<DIRKEY3 ))) { //wenn richtungstaste3 nicht gedrückt, dann LED 2 aus
 		  	  //PORTC &= ~(1<<PC3);
-			  PORTA &= ~(1<<PA1);				
+			  PORTA &= ~(1<<LED2);				
 	  	  }
 	  
 		
