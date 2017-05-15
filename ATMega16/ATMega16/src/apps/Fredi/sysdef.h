@@ -1,20 +1,16 @@
 /****************************************************************************
     Copyright (C) 2006 Olaf Funke
-
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
     License as published by the Free Software Foundation; either
     version 2.1 of the License, or (at your option) any later version.
-
     This library is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
     Lesser General Public License for more details.
-
     You should have received a copy of the GNU Lesser General Public
     License along with this library; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-
     $Id: sysdef.h,v 1.16 2011/08/04 12:41:35 pischky Exp $
 ******************************************************************************/
 #ifndef _SYSDEF_H_
@@ -213,6 +209,53 @@
 // Hardware mapping
 /******************************************************************************/
 
+// PortA
+#define LED1			PA0
+#define LED2			PA1
+#define FUNK_L_1		PA2 //FUNK_L_1
+#define RICHTG_3		PA3 //RICHTG_1
+#define REGLER_4		PA4
+#define REGLER_3		PA5
+#define REGLER_2		PA6
+#define REGLER_1		PA7
+
+#define PORT_A			PORTA
+#define DDR_A			DDRA
+#define PIN_A			PINA
+
+//PortB (PB1, PB2, PB3 : undefined)
+#define FUNK_L_3		PB0
+#define FUNK_L_2		PB4
+
+#define PORT_B			PORTB
+#define DDR_B			DDRB
+#define PIN_B			PINB
+
+//PortC (PC4, PC5 : undefined)
+
+#define RICHTG_4		PC0
+#define RICHTG_1		PC1
+#define RICHTG_2		PC2
+#define LED3			PC3
+#define LED4			PC4
+#define FUNK_L_4		PC7
+
+#define PORT_C			PORTC
+#define DDR_C			DDRC
+#define PIN_C			PINC
+
+//PortD (PD0, PD1, PD2, PD7 : undefined)
+#define FUNK_4			PD3
+#define FUNK_3			PD4
+#define FUNK_2			PD5
+#define FUNK_1			PD6
+
+#define PORT_D			PORTD
+#define DDR_D			DDRD
+#define PIN_D			PIND
+
+//-------------------------------------------
+/*
 // PortB
 #define KEYPIN_SHIFT    PB0
 #define KEYPIN_F4       PB1
@@ -220,11 +263,9 @@
 #define KEYPIN_F2       PB3
 #define KEYPIN_F1       PB4
 #define KEYPIN_F0       PB5
-
 #define KEYPIN_PORT     PORTB
 #define KEYPIN_DDR      DDRB
 #define KEYPIN_PIN      PINB
-
 // PortC
 #define ANA_SPD         PC0
 #define DIRSWITCH       PC1
@@ -232,23 +273,19 @@
 #define LED_GREEN_L     PC3
 #define LED_RED         PC4
 #define ANA_VERSION     PC5
-
 #define LED_PORT        PORTC
 #define LED_DDR         DDRC
-
 #define DIRSWITCH_PORT  PORTC
 #define DIRSWITCH_DDR   DDRC
 #define DIRSWITCH_PIN   PINC
-
 // PortD
 #define ENC_BIT_0       PD2
 #define ENC_BIT_1       PD3
 #define ENC_SWITCH      PD5
-
 #define ENC_PORT        PORTD
 #define ENC_DDR         DDRD
 #define ENC_PIN         PIND
-
+*/
 // encoder interrupt
 #if defined(__AVR_ATmega16__)
 
@@ -282,14 +319,50 @@
 #define ENC_INT_vect	INT1_vect	// interrupt 1
 
 // defines for key mapping
+// Extra Funk Tasten
+#define KEYPIN_FUNK_PORT_D    ( _BV(FUNK_1) |\
+								_BV(FUNK_2) |\
+								_BV(FUNK_3) |\
+								_BV(FUNK_4) )
 
+#define Key_FUNK_1				_BV(FUNK_1)
+#define Key_FUNK_2				_BV(FUNK_2)
+#define Key_FUNK_3				_BV(FUNK_3)
+#define Key_FUNK_4				_BV(FUNK_4)
+
+// Funk Tasten
+#define Key_FUNK_L_1			_BV(FUNK_L_1)
+#define Key_FUNK_L_2			_BV(FUNK_L_2)
+#define Key_FUNK_L_3			_BV(FUNK_L_3)
+#define Key_FUNK_L_4			_BV(FUNK_L_4)
+
+// Direction Keys
+#define Key_Dir_1				_BV(RICHTG_1)
+#define Key_Dir_2				_BV(RICHTG_2)
+#define Key_Dir_3				_BV(RICHTG_3)
+#define Key_Dir_4				_BV(RICHTG_4)
+
+#define Key_F5          (Key_F1 | Key_SHIFT)
+//Zusätzliche Funktionstasten durch Kombination
+
+//#define Key_Dir         0x80
+
+
+#define Key_Poti_L      0x0400
+#define Key_Poti_R      0x0800
+
+
+#define Key_Fredi_Poti              (KEYPIN_FUNK_PORT_D | Key_Poti_L | Key_Poti_R | Key_Dir_1)
+
+
+
+/*// defines for key mapping
 #define KEYPIN_ALL    ( _BV(KEYPIN_F0) |\
-                        _BV(KEYPIN_F1) |\
-                        _BV(KEYPIN_F2) |\
-                        _BV(KEYPIN_F3) |\
-                        _BV(KEYPIN_F4) |\
-                        _BV(KEYPIN_SHIFT) )
-
+_BV(KEYPIN_F1) |\
+_BV(KEYPIN_F2) |\
+_BV(KEYPIN_F3) |\
+_BV(KEYPIN_F4) |\
+_BV(KEYPIN_SHIFT) )
 #define Key_F0          _BV(KEYPIN_F0)
 #define Key_SHIFT       _BV(KEYPIN_SHIFT)
 #define Key_F1          _BV(KEYPIN_F1)
@@ -302,17 +375,14 @@
 #define Key_F8          (Key_F4 | Key_SHIFT)
 #define Key_Stop        0x40
 #define Key_Dir         0x80
-
 #define Key_Enc_L       0x0100
 #define Key_Enc_R       0x0200
 #define Key_Poti_L      0x0400
 #define Key_Poti_R      0x0800
-
 #define Key_Fredi_Inkrement         (KEYPIN_ALL | Key_Stop | Key_Enc_L  | Key_Enc_R )
 #define Key_Fredi_Inkrement_Switch  (KEYPIN_ALL | Key_Stop | Key_Enc_L  | Key_Enc_R  | Key_Dir)
 #define Key_Fredi_Poti              (KEYPIN_ALL | Key_Stop | Key_Poti_L | Key_Poti_R | Key_Dir)
-
-#define ENC_BITS      ( _BV(ENC_BIT_0) | _BV(ENC_BIT_1) )
+#define ENC_BITS      ( _BV(ENC_BIT_0) | _BV(ENC_BIT_1) )*/
 
 
 /******************************************************************************/
