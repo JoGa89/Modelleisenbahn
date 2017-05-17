@@ -1375,31 +1375,89 @@ void vProcessKey(void)
 	//Richtungstasten
 	
 
-	    if (lastLED1State == 1) {
-			if ((PINC & (1<<RICHTG_4)) ) { //LED1, Richtungstaste4
-				PORTA |= (1 << LED1);
+	   if (lastLED1State == 1) {
+			if (bit_is_clear(PINC,0)) { //LED1, Richtungstaste4
+				PORTA &= ~(1 << LED1);
 				lastLED1State = 0;
 				//LocoNet
-			//	_delay_ms(200);
-			} else if (!(PINC & (1<<RICHTG_4))) {
-				PORTA &= ~(1 << LED1);
-			//					_delay_ms(200);
-			}
-		}
-		else if (lastLED1State == 0) {
-			if (PINC & (1<<RICHTG_4)) { //LED1, Richtungstaste4
-				PORTA &= ~(1 << LED1);
+				while (bit_is_clear(PINC,0)) {
+					_delay_ms(50);
+				}
+			} 
+		} else if (lastLED1State == 0) {
+			if (bit_is_clear(PINC,0)) { //LED1, Richtungstaste4
+				PORTA |= (1 << LED1);
 				lastLED1State = 1;
 				//LocoNet
-			//					_delay_ms(200);
-			} else if (!(PINC & (1<<RICHTG_4))) {
-				PORTA |= (1 << LED1);
-		//						_delay_ms(200);
+				while (bit_is_clear(PINC,0)) {
+					_delay_ms(50);
+				}
+			} 
+		}
+	
+
+	   if (lastLED2State == 1) {
+		   if (bit_is_clear(PINA,3)) { //LED1, Richtungstaste4
+			   PORTA &= ~(1 << LED2);
+			   lastLED2State = 0;
+			   //LocoNet
+				while (bit_is_clear(PINA,3)) {
+					_delay_ms(50);
+				}
+		   }
+		} else if (lastLED2State == 0) {
+		   if (bit_is_clear(PINA,3)) { //LED1, Richtungstaste4
+			   PORTA |= (1 << LED2);
+			   lastLED2State = 1;
+			   //LocoNet
+				while (bit_is_clear(PINA,3)) {
+					_delay_ms(50);
+				}
+		   }
+	   }
+	   
+	/*	if (lastLED3State == 1) {
+			if (bit_is_clear(PINC,2)) { //LED1, Richtungstaste4
+				PORTC &= ~(1 << LED3);
+				lastLED3State = 0;
+				//LocoNet
+				while (bit_is_clear(PINC,2)) {
+					_delay_ms(50);
+				}
+			}
+		} else if (lastLED3State == 0) {
+		   	   if (bit_is_clear(PINC,2)) { //LED1, Richtungstaste4
+			   	   PORTC |= (1 << LED3);
+			   	   lastLED3State = 1;
+			   	   //LocoNet
+					while (bit_is_clear(PINC,2)) {
+						_delay_ms(50);
+					}
+				}
+		}*/
+			  
+		if (lastLED4State == 1) {
+			if (bit_is_clear(PINC,1)) { //LED1, Richtungstaste4
+				PORTC &= ~(1 << LED4);
+				lastLED4State = 0;
+				//LocoNet
+				while (bit_is_clear(PINC,1)) {
+					_delay_ms(50);
+				}
+			}
+		} else if (lastLED4State == 0) {
+			if (bit_is_clear(PINC,1)) { //LED1, Richtungstaste4
+				PORTC |= (1 << LED4);
+				lastLED4State = 1;
+				//LocoNet
+				while (bit_is_clear(PINC,1)) {
+					_delay_ms(50);
+				}
 			}
 		}
-				
+			
 				    
-	    if( (PINA & (1<<RICHTG_3)) ) { //LED2, Richtungstaste3
+/*	    if( (PINA & (1<<RICHTG_3)) ) { //LED2, Richtungstaste3
 		    PORTA |= (1 << LED2);
 			//Loconet
 		    } else {
@@ -1418,7 +1476,7 @@ void vProcessKey(void)
 			//Loconet
 		    } else {
 		    PORTC &= ~(1 << LED4);
-	    }
+	    }*/
 		
 	//Funktionstasten-L
 		
@@ -1429,13 +1487,14 @@ void vProcessKey(void)
 			}
 			if (F0counter >= 20) {
 				while (F0counter > 0) {
-					if (F0counter % 2) {
-						PORTA |= (1 << LED1);
-					} else {
-						PORTA &= ~(1 << LED1);
+					if ((F0counter % 2) == 0) {
+						F0counter -= 1;
 					}
-					F0counter--;
+					PORTA |= (1 << LED1);
 					_delay_ms(50);
+					PORTA &= ~(1 << LED1);
+					_delay_ms(50);
+					F0counter--;
 				}
 			} else if (F0counter == 0) {
 				//Loconet
