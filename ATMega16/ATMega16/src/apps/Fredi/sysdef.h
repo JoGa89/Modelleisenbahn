@@ -1,20 +1,16 @@
 /****************************************************************************
     Copyright (C) 2006 Olaf Funke
-
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
     License as published by the Free Software Foundation; either
     version 2.1 of the License, or (at your option) any later version.
-
     This library is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
     Lesser General Public License for more details.
-
     You should have received a copy of the GNU Lesser General Public
     License along with this library; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-
     $Id: sysdef.h,v 1.16 2011/08/04 12:41:35 pischky Exp $
 ******************************************************************************/
 #ifndef _SYSDEF_H_
@@ -23,50 +19,6 @@
 #include <avr/io.h>		// [we need all register and port definitions]
 
 #define wBOARD_FREDI
-
-//#define SW_INDEX        0x0001  // Software aus Wehmingen 05
-//#define SW_INDEX        0x0002  // Software aus Hotteln 05
-//#define SW_INDEX        0x0003  // Software nach Braunlage 06 (22.04.06)
-                                  // Bugfix: reconnect (blinking forever)
-                                  //         poti version works like Fred
-                                  //         increment doesn't stop anymore
-//#define SW_INDEX        0x0004  // Software für Cloppenburg 06 (14.05.06)
-                                  // Bugfix: ignore of speedmessage after change
-                                  //         dir by dirswitch
-
-//#define SW_INDEX        0x0005  // Software nach Cloppenburg 06 (21.05.06)
-                                  //          state cleaned up.
-                                  
-//#define SW_INDEX        0x0006  // Software Test mit Chief (03.06.06)
-                                  // Bugfix: - state THR_STATE_RECONNECT_GET_SLOT 
-                                  //           was missing in error handling
-                                  //         - state corrected in case of not
-                                  //           sending message successfully
-
-//#define SW_INDEX          0x0007  // Software with decoder type encoding (22.08.06)
-
-//#define SW_INDEX          0x0008  // Software with bugfix analog functions (26.08.06)
-
-//#define SW_INDEX            0x0100  // software for release (18.09.06)
-
-//#define SW_INDEX            0x0101  // T.Kurz: Software for release with invertion of dir
-                                      // and differend speed tables
-                                      // Red led is on, when loco is stoped (25.11.06)
-
-//#define SW_INDEX            0x0102  // software for release (04.05.07)
-                                     // Bugfix: no increment steps while stop is pressed
-                                     // Bugfix: red led is running on selftest again
-
-//#define SW_INDEX            0x0103  // software for release (19.08.07)
-                                     // Removed the extension of Thomas, cause of problems on 
-                                     // programming FREDIs with older SW versions
-
-//#define SW_INDEX            0x0104  // software for release (19.10.07)
-                                     // adjust of LN TX routine added
-                                     // fixed problems on large arrangements
-
-//#define SW_INDEX            0x0105  // software for release (09.12.07)
-                                     // changed high and low byte for ID
 
 #ifndef SW_INDEX // see makefile
   #define SW_INDEX      0x0106  // software for release (06.04.10)
@@ -91,19 +43,10 @@
 /******************************************************************************/
 
 #ifndef F_CPU
-  #define F_CPU                     7372800    // Fredi
+  #define F_CPU 16000000                                        //CPU-Speed auf 16Mhz gesetzt
 #endif
 
-#if defined(__AVR_ATmega48__)  | defined(__AVR_ATmega48A__)  \
-  | defined(__AVR_ATmega48P__) | defined(__AVR_ATmega88__)   \
-  | defined(__AVR_ATmega88A__) | defined(__AVR_ATmega88P__)  \
-  | defined(__AVR_ATmega168__) | defined(__AVR_ATmega168A__) \
-  | defined(__AVR_ATmega168P__)| defined(__AVR_ATmega328__)  \
-  | defined(__AVR_ATmega328P__)
-  #define LN_TIMER_TX_RELOAD_ADJUST   102 // 13.8 us delay for FREDI
-                                          // on ATmega328P or ATmega168
-                                          // avr-gcc (WinAVR 20100110) 4.3.3
-#elif defined(__AVR_ATmega16__)
+#if defined(__AVR_ATmega16__)
   #define LN_TIMER_TX_RELOAD_ADJUST    98 // 13.3 us delay for FREDI an ATmega8
                                           // avr-gcc (WinAVR 20100110) 4.3.3
 #else
@@ -165,155 +108,87 @@
   #define LN_TMR_CONTROL_REG    TCCR1B
   #define LN_TMR_PRESCALER      1
 
-#elif defined(__AVR_ATmega48__)  | defined(__AVR_ATmega48A__)  \
-    | defined(__AVR_ATmega48P__) | defined(__AVR_ATmega88__)   \
-    | defined(__AVR_ATmega88A__) | defined(__AVR_ATmega88P__)  \
-    | defined(__AVR_ATmega168__) | defined(__AVR_ATmega168A__) \
-    | defined(__AVR_ATmega168P__)| defined(__AVR_ATmega328__) \
-    | defined(__AVR_ATmega328P__)
-
-  #define LN_SB_SIGNAL          TIMER1_CAPT_vect
-  #define LN_SB_INT_ENABLE_REG  TIMSK1  // Timer/Counter1 Interrupt Mask Register
-  #define LN_SB_INT_ENABLE_BIT  ICIE1   // Timer/Counter1, Input Capture Interrupt Enable
-  #define LN_SB_INT_STATUS_REG  TIFR1   // Timer/Counter1 Interrupt Flag Register
-  #define LN_SB_INT_STATUS_BIT  ICF1
-
-  #define LN_TMR_SIGNAL         TIMER1_COMPA_vect
-  #define LN_TMR_INT_ENABLE_REG TIMSK1  // Timer/Counter1 Interrupt Mask Register
-  #define LN_TMR_INT_ENABLE_BIT OCIE1A
-  #define LN_TMR_INT_STATUS_REG TIFR1   // Timer/Counter1 Interrupt Flag Register
-  #define LN_TMR_INT_STATUS_BIT OCF1A   // Timer/Counter1, output compare A match flag
-  #define LN_TMR_INP_CAPT_REG   ICR1
-  #define LN_TMR_OUTP_CAPT_REG  OCR1A
-  #define LN_TMR_COUNT_REG      TCNT1
-  #define LN_TMR_CONTROL_REG    TCCR1B
-  #define LN_TMR_PRESCALER      1
-
 #else
   #error unsupported MCU value (for now)
 #endif
 
-#define LN_TX_PORT            PORTD
-#define LN_TX_DDR             DDRD
+#define LN_TX_PORT            PORTB
+#define LN_TX_DDR             DDRB
 
-#define LN_TX_BIT             PD4
-
-
-
-/******************************************************************************/
-// ?????
-/******************************************************************************/
-
-
-// use monitor in and output for monitoring
-//#define USE_UART
-
+#define LN_TX_BIT             PB1
 
 /******************************************************************************/
 // Hardware mapping
 /******************************************************************************/
 
-// PortB
-#define KEYPIN_SHIFT    PB0
-#define KEYPIN_F4       PB1
-#define KEYPIN_F3       PB2
-#define KEYPIN_F2       PB3
-#define KEYPIN_F1       PB4
-#define KEYPIN_F0       PB5
+// PortA
+#define LED1			PA0
+#define LED2			PA1
+#define FUNK_L_4		PA2 
+#define RICHTG_2		PA3 
+#define REGLER_1		PA4
+#define REGLER_2		PA5
+#define REGLER_3		PA6
+#define REGLER_4		PA7
 
-#define KEYPIN_PORT     PORTB
-#define KEYPIN_DDR      DDRB
-#define KEYPIN_PIN      PINB
+#define PORT_A			PORTA
+#define DDR_A			DDRA
+#define PIN_A			PINA
 
-// PortC
-#define ANA_SPD         PC0
-#define DIRSWITCH       PC1
-#define LED_GREEN_R     PC2
-#define LED_GREEN_L     PC3
-#define LED_RED         PC4
-#define ANA_VERSION     PC5
+//PortB (PB1, PB2, PB3 : undefined)
+#define FUNK_L_2		PB0
+#define FUNK_L_3		PB4
 
-#define LED_PORT        PORTC
-#define LED_DDR         DDRC
+#define PORT_B			PORTB
+#define DDR_B			DDRB
+#define PIN_B			PINB
 
-#define DIRSWITCH_PORT  PORTC
-#define DIRSWITCH_DDR   DDRC
-#define DIRSWITCH_PIN   PINC
+//PortC (PC4, PC5 : undefined)
 
-// PortD
-#define ENC_BIT_0       PD2
-#define ENC_BIT_1       PD3
-#define ENC_SWITCH      PD5
+#define RICHTG_1		PC0
+#define RICHTG_4		PC1
+#define RICHTG_3		PC2
+#define LED3			PC3
+#define LED4			PC4
+#define FUNK_L_1		PC7
 
-#define ENC_PORT        PORTD
-#define ENC_DDR         DDRD
-#define ENC_PIN         PIND
+#define PORT_C			PORTC
+#define DDR_C			DDRC
+#define PIN_C			PINC
 
-// encoder interrupt
-#if defined(__AVR_ATmega16__)
+//PortD (PD0, PD1, PD2, PD7 : undefined)
+#define FUNK_1			PD3
+#define FUNK_2			PD4
+#define FUNK_3			PD5
+#define FUNK_4			PD6
 
-  #define ENC_ISC_REG   MCUCR   // MCU Control Register
-  #define ENC_ISC_BIT0  ISC10   // Interrupt Sense Control 1 Bit 0
-  #define ENC_ISC_BIT1  ISC11   // Interrupt Sense Control 1 Bit 1
-  #define ENC_EIRE_REG  GICR    // General Interrupt Control Register
-  #define ENC_EIRE_BIT  INT1    // External Interrupt Request 1 Enable
-  #define ENC_EIRF_REG  GIFR    // General Interrupt Flag Register
-  #define ENC_EIRF_BIT  INTF1   // External Interrupt Flag 1
-
-#elif defined(__AVR_ATmega48__)  | defined(__AVR_ATmega48A__)  \
-    | defined(__AVR_ATmega48P__) | defined(__AVR_ATmega88__)   \
-    | defined(__AVR_ATmega88A__) | defined(__AVR_ATmega88P__)  \
-    | defined(__AVR_ATmega168__) | defined(__AVR_ATmega168A__) \
-    | defined(__AVR_ATmega168P__)| defined(__AVR_ATmega328__) \
-    | defined(__AVR_ATmega328P__)
-
-  #define ENC_ISC_REG   EICRA   // External interrupt control register A
-  #define ENC_ISC_BIT0  ISC10   // Interrupt Sense Control 1 Bit 0
-  #define ENC_ISC_BIT1  ISC11   // Interrupt Sense Control 1 Bit 1
-  #define ENC_EIRE_REG  EIMSK   // External interrupt mask register
-  #define ENC_EIRE_BIT  INT1    // External interrupt request 1 enable
-  #define ENC_EIRF_REG  EIFR    // External Interrupt Flag Register
-  #define ENC_EIRF_BIT  INTF1   // External Interrupt Flag 1
-
-#else
-  #error unsupported MCU value (for now)
-#endif
-
-#define ENC_INT_vect	INT1_vect	// interrupt 1
+#define PORT_D			PORTD
+#define DDR_D			DDRD
+#define PIN_D			PIND
 
 // defines for key mapping
+// Extra Funk Tasten
+#define KEYPIN_FUNK_PORT_D    ( _BV(FUNK_1) |\
+								_BV(FUNK_2) |\
+								_BV(FUNK_3) |\
+								_BV(FUNK_4) )
 
-#define KEYPIN_ALL    ( _BV(KEYPIN_F0) |\
-                        _BV(KEYPIN_F1) |\
-                        _BV(KEYPIN_F2) |\
-                        _BV(KEYPIN_F3) |\
-                        _BV(KEYPIN_F4) |\
-                        _BV(KEYPIN_SHIFT) )
+#define Key_FUNK_1				_BV(FUNK_1)
+#define Key_FUNK_2				_BV(FUNK_2)
+#define Key_FUNK_3				_BV(FUNK_3)
+#define Key_FUNK_4				_BV(FUNK_4)
 
-#define Key_F0          _BV(KEYPIN_F0)
-#define Key_SHIFT       _BV(KEYPIN_SHIFT)
-#define Key_F1          _BV(KEYPIN_F1)
-#define Key_F2          _BV(KEYPIN_F2)
-#define Key_F3          _BV(KEYPIN_F3)
-#define Key_F4          _BV(KEYPIN_F4)
-#define Key_F5          (Key_F1 | Key_SHIFT)
-#define Key_F6          (Key_F2 | Key_SHIFT)
-#define Key_F7          (Key_F3 | Key_SHIFT)
-#define Key_F8          (Key_F4 | Key_SHIFT)
-#define Key_Stop        0x40
-#define Key_Dir         0x80
+// Funk Tasten
+#define Key_FUNK_L_1			_BV(FUNK_L_1)
+#define Key_FUNK_L_2			_BV(FUNK_L_2)
+#define Key_FUNK_L_3			_BV(FUNK_L_3)
+#define Key_FUNK_L_4			_BV(FUNK_L_4)
 
-#define Key_Enc_L       0x0100
-#define Key_Enc_R       0x0200
-#define Key_Poti_L      0x0400
-#define Key_Poti_R      0x0800
-
-#define Key_Fredi_Inkrement         (KEYPIN_ALL | Key_Stop | Key_Enc_L  | Key_Enc_R )
-#define Key_Fredi_Inkrement_Switch  (KEYPIN_ALL | Key_Stop | Key_Enc_L  | Key_Enc_R  | Key_Dir)
-#define Key_Fredi_Poti              (KEYPIN_ALL | Key_Stop | Key_Poti_L | Key_Poti_R | Key_Dir)
-
-#define ENC_BITS      ( _BV(ENC_BIT_0) | _BV(ENC_BIT_1) )
-
+// Direction Keys
+#define Key_Dir_1				_BV(RICHTG_1)
+#define Key_Dir_2				_BV(RICHTG_2)
+#define Key_Dir_3				_BV(RICHTG_3)
+#define Key_Dir_4				_BV(RICHTG_4)
 
 /******************************************************************************/
 // other defines
@@ -366,16 +241,10 @@ enum EEPROM_ADR
 // other
 /******************************************************************************/
 
-#define OPC_SELFTEST        0xaf
-#define OPC_FRED_ADC        0xAF
-#define OPC_FRED_BUTTON     0xA8
-
 // this defines are required by ln_sw_uart.c, systimer.c
 #define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
 #define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
 
 #define LN_MAX_BUFFER_SIZE  240
-
-
 
 #endif // _SYSDEF_H_
