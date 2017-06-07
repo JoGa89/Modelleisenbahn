@@ -13,6 +13,9 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
     $Id: fredi.c,v 1.13 2011/07/31 15:54:12 pischky Exp $
 ******************************************************************************/
+/**
+ * \file
+ */
 
 #include <stdint.h>         // typedef int8_t, typedef uint8_t,
                             // typedef int16_t, typedef uint16_t
@@ -60,7 +63,7 @@ void sendLocoNetFredAdc( uint16_t raw );
 void sendLocoNetFredCd( uint8_t cdTime );
 void sendLocoNetFredButton( uint8_t button );
 
-inline uint8_t debounce(volatile uint8_t *port, uint8_t pin);
+inline uint8_t debounce(uint8_t pin, uint8_t port);
 
 
 /******************************************************************************/
@@ -76,6 +79,7 @@ static volatile byte    lastLED2State     = 0;
 static volatile byte    lastLED3State     = 0;
 static volatile byte    lastLED4State     = 0;
 static volatile byte	F0counter = 0;
+static volatile byte	keyPressed = 0;
 static volatile byte	ReglerKeysActive = 0;
 
 
@@ -416,7 +420,7 @@ void vSetState( byte bState )
   #define UBRR_VAL ((F_CPU+BAUD*8)/(BAUD*16)-1)               //clever runden
   #define BAUD_REAL (F_CPU/(16*(UBRR_VAL+1)))                 //Reale Baudrate
   #define BAUD_ERROR ((BAUD_REAL*1000)/BAUD)                     //Fehler in Promille, 1000 = kein Fehler.
-  #include <util/setbaud.h>
+  //#include <util/setbaud.h>
   
   static FILE mystdout;
   int count;
@@ -462,7 +466,9 @@ void vSetState( byte bState )
 int main(void)
 {
 		uart_init();
-		printf("Hallo\n");
+		printf("\n------------------------- \n");
+		
+		printf("Main Anfang \n");
 	
 		RESET_RESET_SOURCE(); // Clear Reset Status Register (WDRF,BORF,EXTRF,PORF)
 	  
@@ -473,29 +479,31 @@ int main(void)
 
 		rSlot.command   = OPC_WR_SL_DATA;
 		rSlot.mesg_size = 14;
-		rSlot.slot      = 0;                        /* slot number for this request                         */
-		rSlot.stat      = 0;                        /* slot status                                          */
-		rSlot.adr       = 0;                        /* loco address                                         */
-		rSlot.spd       = 50;                        /* command speed                                        */
-		rSlot.dirf      = 0;                        /* direction and F0-F4 bits                             */
-		rSlot.trk       = 0;                        /* track status                                         */
-		rSlot.ss2       = 0;                        /* slot status 2 (tells how to use ID1/ID2 & ADV Consist*/
-		rSlot.adr2      = 0;                        /* loco address high                                    */
-		rSlot.snd       = 0;                        /* Sound 1-4 / F5-F8                                    */ 
+		rSlot.slot      = 0;                        //slot number for this request                         
+		rSlot.stat      = 0;                        // slot status                                          
+		rSlot.adr       = 0;                        // loco address                                         
+		rSlot.spd       = 0;                       // command speed                                        
+		rSlot.dirf      = 0;                        // direction and F0-F4 bits                             
+		rSlot.trk       = 0;                        // track status                                         
+		rSlot.ss2       = 0;                        // slot status 2 (tells how to use ID1/ID2 & ADV Consist
+		rSlot.adr2      = 0;                        // loco address high                                   
+		rSlot.snd       = 0;                        // Sound 1-4 / F5-F8                                    
 
 		initLocoNet(&RxBuffer) ;
-
+		printf("Init Loconet \n");
+		
 		//Regler
 		//potAdcInit();	  
 		
 		//Keys
 		initKeys();
-	  
+		printf("init Keys \n");
 	      
 
-	
+
 
 		//Timer
+		
 		TCNT0 = (byte) TICK_RELOAD ;
 		sbi(TIFR, TOV0) ;
 		sbi(TIMSK, TOIE0) ;
@@ -503,13 +511,21 @@ int main(void)
 	  
 		//addTimerAction(&MessageTimer, 0, MessageTimerAction, 0, TIMER_SLOW ) ;
 
+		PORTC |= (1 << LED4);
 		
 		cli();
-		
+	/*	
+			while(1) {
+				
+				PORTA |= (1 << LED2); // ROT
+				_delay_ms(500);
+				PORTA &= ~(1 << LED2); // GRÃœN
+			}
+	*/	
 	while (1)
 	{
-		vProcessRxLoconetMessage();
-		//vProcessKey();
+		//vProcessRxLoconetMessage();
+		vProcessKey();
 		//vProcessRxLoconetMessage();
 		//vProcessPoti();
 		//vProcessRxLoconetMessage();
@@ -535,6 +551,8 @@ void vProcessRxLoconetMessage(void)
   for(int i = 0;i < 16; i++) 
 	printf("%02hhx", RxPacket->data[i]);
 	printf("\n");
+	
+	//sendLocoNetWriteSlotData(&rSlot);
 	
   if (RxPacket)
   {
@@ -733,53 +751,78 @@ void vProcessRxLoconetMessage(void)
  * 
  ********
  */
-inline uint8_t debounce(volatile uint8_t *port, uint8_t pin)
-{
-	if ( !(*port & (1 << pin)) )
-	{
-		printf(" der Port %hhu \n" , *port );
-		/* Pin wurde auf Masse gezogen, 100ms warten   */
-		_delay_ms(30);   // Maximalwert des Parameters an _delay_ms
-		//_delay_ms(50);   // beachten, vgl. Dokumentation der avr-libc
-		if ( *port & (1 << pin) )
-		{
-			/* Anwender Zeit zum Loslassen des Tasters geben */
-			_delay_ms(30);
-			//_delay_ms(50);
-			return 1;
-		}
-	}
-	return 0;
-}	
+/*
+static volatile byte	debounceCounter = 0;
+static volatile byte	debounceTicks = 60;
 
+inline uint8_t debounce(uint8_t pin, uint8_t port)
+{
+	
+	if(bit_is_clear(pin,port)) {
+		printf("debounce \n");
+		debounceCounter++;
+		return 0;
+	} else if(bit_is_clear(pin,port) && (debounceCounter == debounceTicks )) {
+		return 1;
+		debounceCounter = 0;
+	} else {
+
+		return 0;
+	}
+}	
+*/
 
 
 void vProcessKey(void)
-{		
-	printf("ProcessKey \n");
-    if (debounce(&PINC, PC0) && lastLED1State == 0) {
-		PORTA |= (1 << LED1); // ROT
-		lastLED1State = 1;
-		printf("LED1 AUF ROT\n");
-    } else if (debounce(&PINC, PC0) && lastLED1State == 1){
-	    PORTA &= ~(1 << LED1); // GRÜN  
-		lastLED1State = 0;
-		printf("LED AUF GRUEN \n");
-    }	
+{
+	//printf("ProcessKey \n");
 
 	
-	
-	
 	//Richtungstasten
-	/*
 	
+	
+	   if (lastLED1State == 1) {
+		   if (bit_is_clear(PINC,0) && F0counter < 7 && keyPressed == 0) { //LED1, Richtungstaste1
+				F0counter++;
+				printf("LED1State = 1 ,  counter \n");
+		   } else if(bit_is_clear(PINC,0) && F0counter == 7 && keyPressed == 0) {
+			   	PORTA &= ~(1 << LED1);
+			   	lastLED1State = 0;
+				printf("LED1 AUF GRUEN \n");
+				F0counter = 0;
+				keyPressed = 1;
+		   } else if(bit_is_set(PINC,0)) {
+			    printf("bit is set \n");
+			    F0counter = 0;
+				keyPressed = 0;
+		   }			   
+		}
+		if (lastLED1State == 0) {
+		   if (bit_is_clear(PINC,0) && F0counter < 7 && keyPressed == 0) { //LED1, Richtungstaste1
+				F0counter++;
+				printf("LED1State = 0 ,  counter \n");
+		   } else if(bit_is_clear(PINC,0) && F0counter == 7 && keyPressed == 0) {
+				PORTA |= (1 << LED1);
+				lastLED1State = 1;
+				F0counter = 0;
+				keyPressed = 1;
+				printf("LED1 AUF ROT\n");
+		   } else if(bit_is_set(PINC,0) ) {
+
+				 F0counter = 0;
+				 keyPressed = 0;
+				 printf("bit is set \n");
+			}
+	   }
+		/*
 	   if (lastLED1State == 1) {
 			if (bit_is_clear(PINC,0)) { //LED1, Richtungstaste1
 				PORTA &= ~(1 << LED1);
 				lastLED1State = 0;
 				while (bit_is_clear(PINC,0)) {
-					_delay_ms(20);
+					_delay_ms(2);
 				}
+				printf("LED1 AUF GRUEN \n");
 				//rSlot.dirf |= 0x20;
 			} 
 		} else if (lastLED1State == 0) {
@@ -787,12 +830,13 @@ void vProcessKey(void)
 				PORTA |= (1 << LED1);
 				lastLED1State = 1;
 				while (bit_is_clear(PINC,0)) {
-					_delay_ms(20);
+					_delay_ms(2);
 				}
+				printf("LED1 AUF ROT\n");
 				//rSlot.dirf &= ~0x20;
 			} 
 		}
-		
+		*/
 		//sendLocoNetDirf(&rSlot);
         //resetTimerAction(&MessageTimer, 1);
 	
@@ -802,8 +846,9 @@ void vProcessKey(void)
 			   PORTA &= ~(1 << LED2);
 			   lastLED2State = 0;
 			   while (bit_is_clear(PINA,3)) {
-					_delay_ms(20);
+					_delay_ms(2);
 				}
+				printf("LED2 AUF GRUEN \n");
 				//rSlot.dirf |= 0x20;
 		   }
 		} else if (lastLED2State == 0) {
@@ -811,8 +856,9 @@ void vProcessKey(void)
 			   PORTA |= (1 << LED2);
 			   lastLED2State = 1;
 			   while (bit_is_clear(PINA,3)) {
-					_delay_ms(20);
+					_delay_ms(2);
 			   }
+				printf("LED2 AUF ROT\n");
 			   //rSlot.dirf &= ~0x20;
 		   }
 	   }
@@ -823,7 +869,7 @@ void vProcessKey(void)
 				PORTC &= ~(1 << LED3);
 				lastLED3State = 0;
 				while (bit_is_clear(PINC,2)) {
-					_delay_ms(50);
+					_delay_ms(2);
 				}
 				//rSlot.dirf |= 0x20;
 			}
@@ -832,7 +878,7 @@ void vProcessKey(void)
 				PORTC |= (1 << LED3);
 				lastLED3State = 1;
 				while (bit_is_clear(PINC,2)) {
-					_delay_ms(50);
+					_delay_ms(2);
 				}
 				//rSlot.dirf &= ~0x20;
 			}
@@ -841,20 +887,20 @@ void vProcessKey(void)
 		
 		if (lastLED4State == 1) {
 			if (bit_is_clear(PINC,1)) { //LED1, Richtungstaste4
-				PORTC &= ~(1 << LED4);
+				PORTC |= (1 << LED4);
 				lastLED4State = 0;
 				//LocoNet
 				while (bit_is_clear(PINC,1)) {
-					_delay_ms(20);
+					_delay_ms(2);
 				}
 				//rSlot.dirf |= 0x20;
 			}
 		} else if (lastLED4State == 0) {
 			if (bit_is_clear(PINC,1)) { //LED1, Richtungstaste4
-				PORTC |= (1 << LED4);
+				PORTC &= ~(1 << LED4);				
 				lastLED4State = 1;
 				while (bit_is_clear(PINC,1)) {
-					_delay_ms(20);
+					_delay_ms(2);
 				}
 				//rSlot.dirf &= ~0x20;
 			}
@@ -874,6 +920,7 @@ void vProcessKey(void)
 				}
 				PORTA &= ~(1 << LED2);
 				ReglerKeysActive = 1;
+				printf("ReglerKeyActive 1 \n");
 				F0counter = 0;
 			} else if (F0counter < 19) {
 				F0counter = 0;
@@ -950,7 +997,7 @@ void vProcessKey(void)
 				PORTA |= (1 << LED1); // ROT
 				break;
 				case 2:
-				PORTA &= ~(1 << LED2); // GRÜN
+				PORTA &= ~(1 << LED2); // GRÃœN
 				break;
 			}
 			//Loconet
@@ -963,7 +1010,7 @@ void vProcessKey(void)
 				case 0:
 				break;
 				case 1:
-				PORTA &= ~(1 << LED1); // GRÜN
+				PORTA &= ~(1 << LED1); // GRÃœN
 				break;
 				case 2:
 				PORTA |= (1 << LED2); // ROT
@@ -979,10 +1026,10 @@ void vProcessKey(void)
 				case 0:
 				break;
 				case 1:
-				PORTA |= (1 << LED1); // ROT
+				PORTA |= (1 << LED3); // ROT
 				break;
 				case 2:
-				PORTA &= ~(1 << LED2); // GRÜN
+				PORTA &= ~(1 << LED3); // GRÃœN
 				break;
 			}
 			//Loconet
@@ -995,10 +1042,10 @@ void vProcessKey(void)
 				case 0:
 				break;
 				case 1:
-				PORTA &= ~(1 << LED1); // GRÜN
+				PORTA &= ~(1 << LED4); // GRÃœN
 				break;
 				case 2:
-				PORTA |= (1 << LED2); // ROT
+				PORTA |= (1 << LED4); // ROT
 				break;
 			}
 				    //Loconet
@@ -1007,7 +1054,7 @@ void vProcessKey(void)
 		if(rSlot.adr != 0) {
 			F0counter = 20;
 			while(F0counter > 0) {
-				PORTA &= ~(1 << LED1); // GRÜN
+				PORTA &= ~(1 << LED1); // GRÃœN
 				_delay_ms(1000);
 				PORTA |= (1 << LED1); // ROT
 				_delay_ms(1000);
