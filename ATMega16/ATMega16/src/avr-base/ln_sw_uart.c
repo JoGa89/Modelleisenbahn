@@ -58,12 +58,12 @@
 // microseconds. Do not forget to disable definition of TX_START_MEASUREMENT
 // afterwards.
 // See definition of LN_TIMER_TX_RELOAD_ADJUST in this file.
-//#define TX_START_MEASUREMENT
+// #define TX_START_MEASUREMENT
 
 #ifdef TX_START_MEASUREMENT
 	#define TX_MEASUREMENT_PORT PORTD
 	#define TX_MEASUREMENT_DDR  DDRD
-	#define TX_MEASUREMENT_PIN  PD0
+	#define TX_MEASUREMENT_PIN  PD7
 #endif
 
 
@@ -72,128 +72,6 @@
   #ifndef BOARD_DEFINED_IN_SYSDEF
     #error definitions of loconet resources moved to sysdef.h for FREDI
   #endif
-
-#elif defined BOARD_LOCO_DEV //EmbeddedLocoNet
-
-#if defined (__AVR_ATmega8__)
-	#define LN_SB_INT_ENABLE_REG  TIMSK
-	#define LN_SB_INT_ENABLE_BIT  TICIE1
-	#define LN_SB_INT_STATUS_REG  TIFR
-	#define LN_TMR_INT_ENABLE_REG TIMSK
-	#define LN_TMR_INT_STATUS_REG TIFR
-#elif defined (__AVR_ATmega88__) || defined (__AVR_ATmega168__)
-	#define LN_SB_INT_ENABLE_REG  TIMSK1
-	#define LN_SB_INT_ENABLE_BIT  ICIE1
-	#define LN_SB_INT_STATUS_REG  TIFR1
-	#define LN_TMR_INT_ENABLE_REG TIMSK1
-	#define LN_TMR_INT_STATUS_REG TIFR1
-#endif
-
-#define LN_SB_SIGNAL          TIMER1_CAPT_vect
-#define LN_SB_INT_STATUS_BIT  ICF1
-
-#define LN_TMR_SIGNAL         TIMER1_COMPA_vect
-#define LN_TMR_INT_ENABLE_BIT OCIE1A
-#define LN_TMR_INT_STATUS_BIT OCF1A
-
-#define LN_TMR_INP_CAPT_REG   ICR1     // [BA040319] added defines for:
-#define LN_TMR_OUTP_CAPT_REG  OCR1A     // ICR1, OCR1A, TCNT1, TCCR1B
-#define LN_TMR_COUNT_REG      TCNT1     // and replaced their occurence in
-#define LN_TMR_CONTROL_REG    TCCR1B    // the code.
-
-#define LN_TMR_PRESCALER      1
-
-#define LN_RX_PORT            PINB
-#define LN_RX_BIT             PB0
-
-#define LN_TX_PORT            PORTD
-#define LN_TX_DDR             DDRD
-#define LN_TX_BIT             PD6
-
-
-#elif defined BOARD_PROTO_128 //ProtoBoardMega128
-#define LN_RX_PORT            PINE
-#define LN_RX_BIT             PORTE7
-
-#define LN_SB_SIGNAL          TIMER3_CAPT_vect
-#define LN_SB_INT_ENABLE_REG  ETIMSK
-#define LN_SB_INT_ENABLE_BIT  TICIE3
-#define LN_SB_INT_STATUS_REG  ETIFR
-#define LN_SB_INT_STATUS_BIT  ICF3
-
-#define LN_TMR_SIGNAL         TIMER3_COMPA_vect
-#define LN_TMR_INT_ENABLE_REG ETIMSK
-#define LN_TMR_INT_ENABLE_BIT OCIE3A
-#define LN_TMR_INT_STATUS_REG ETIFR
-#define LN_TMR_INT_STATUS_BIT OCF3A
-#define LN_TMR_INP_CAPT_REG   ICR3     // [BA040319] added defines for:
-#define LN_TMR_OUTP_CAPT_REG  OCR3A     // ICR1, OCR1A, TCNT1, TCCR1B
-#define LN_TMR_COUNT_REG      TCNT3     // and replaced their occurence in
-#define LN_TMR_CONTROL_REG    TCCR3B    // the code.
-
-#define LN_TMR_PRESCALER      1
-
-#define LN_TX_PORT            PORTE
-#define LN_TX_DDR             DDRE
-#define LN_TX_BIT             PORTE6
-
-/*** [DH040609] added OmniPort Board definitions for OmniLinx Project */
-#elif defined BOARD_OMNIPORT_OMNILINX // OmniPort OmniLinx Project
-#define LN_RX_PORT            PINC	// OmniLinx
-#define LN_RX_BIT             PC1	// OmniLinx
-
-#define LN_SB_SIGNAL          TIMER1_CAPT_vect
-#define LN_SB_INT_ENABLE_REG  TIMSK
-#define LN_SB_INT_ENABLE_BIT  TICIE1
-#define LN_SB_INT_STATUS_REG  TIFR
-#define LN_SB_INT_STATUS_BIT  ICF1
-
-#define LN_TMR_SIGNAL         TIMER1_COMPA_vect
-#define LN_TMR_INT_ENABLE_REG TIMSK
-#define LN_TMR_INT_ENABLE_BIT OCIE1A
-#define LN_TMR_INT_STATUS_REG TIFR
-#define LN_TMR_INT_STATUS_BIT OCF1A
-#define LN_TMR_INP_CAPT_REG   ICR1     // [BA040319] added defines for:
-#define LN_TMR_OUTP_CAPT_REG  OCR1A     // ICR1, OCR1A, TCNT1, TCCR1B
-#define LN_TMR_COUNT_REG      TCNT1     // and replaced their occurence in
-#define LN_TMR_CONTROL_REG    TCCR1B    // the code.
-
-#define LN_TMR_PRESCALER      1
-
-#define LN_TX_PORT            PORTC	// OmniLinx
-#define LN_TX_DDR             DDRC	// OmniLinx
-#define LN_TX_BIT             PC0	// OmniLinx
-
-
-#elif defined BOARD_DT006_MEGA16 //ProtoBoardMega128
-#define LN_RX_PORT            PINB
-#define LN_RX_BIT             PB0
-
-#define LN_SB_SIGNAL          TIMER1_CAPT_vect
-#define LN_SB_INT_ENABLE_REG  TIMSK
-#define LN_SB_INT_ENABLE_BIT  TICIE1
-#define LN_SB_INT_STATUS_REG  TIFR
-#define LN_SB_INT_STATUS_BIT  ICF1
-
-#define LN_TMR_SIGNAL         TIMER1_COMPA_vect
-#define LN_TMR_INT_ENABLE_REG TIMSK
-#define LN_TMR_INT_ENABLE_BIT OCIE1A
-#define LN_TMR_INT_STATUS_REG TIFR
-#define LN_TMR_INT_STATUS_BIT OCF1A
-#define LN_TMR_INP_CAPT_REG   ICR1     // [BA040319] added defines for:
-#define LN_TMR_OUTP_CAPT_REG  OCR1A     // ICR1, OCR1A, TCNT1, TCCR1B
-#define LN_TMR_COUNT_REG      TCNT1     // and replaced there occurence in
-#define LN_TMR_CONTROL_REG    TCCR1B    // the code.
-
-#define LN_TMR_PRESCALER      1
-
-#define LN_TX_PORT            PORTD
-#define LN_TX_DDR             DDRD
-#define LN_TX_BIT             PD6
-
-#elif defined BOARD_DEFINED_IN_SYSDEF
-
-// no warning and no defnition
 
 #else //No Board defined (Error)
 #    warning "Board not defined"
@@ -505,8 +383,9 @@ void initLocoNetHardware( LnBuf *RxBuffer )
 #endif
 
 #ifdef RX_MONITOR
-  sbi(DDRD, PD1);
-  sbi(PORTD, PD1);
+//TODO PIN ODER PORT?
+  sbi(DDRB, PB2);
+  sbi(PORTB, PB2);
 #endif
 
 #ifdef TX_START_MEASUREMENT
@@ -516,45 +395,15 @@ void initLocoNetHardware( LnBuf *RxBuffer )
 
 	
 	lnRxBuffer = RxBuffer ;
-
+	memset(lnRxBuffer->Buf,0,LN_BUF_SIZE);
     // Set the TX line to Inactive
   LN_SW_UART_SET_TX_HIGH
   sbi( LN_TX_DDR, LN_TX_BIT ) ;
 
 /*** [DH040609] added ifdef for different PCB. Value defined in sysdef.h ****/
-/*** [DH040609] added OmniPort Board definitions for OmniLinx Project */
-#if defined BOARD_OMNIPORT_OMNILINX // OmniPort OmniLinx Project
-	// Setup comparitors, etc
-	SFIOR |= (1<<ACME);					// enable the Analog Comparator Muliplexor
-	ADCSRA &= ~(1<<ADEN);					// turn off ADC
-	ACSR |= (1<<ACBG)|(1<<ACO)|(1<<ACIC);	// turn on comparitor, bandgap, output, input capture
-	ADMUX |= (1<<REFS0)|(1<<REFS1)|1;		//choose internal 2.56V source and Chl 1
-	TCCR1B = (TCCR1B & 0xF8) | (1<<ICES1) | LN_TMR_PRESCALER ;    		// Set Rising Edge and Timer Clock Source 
-#elif (defined wBOARD_FREDI || defined LN_SW_USE_AC_AS_IN_FREDI)
+#if (defined wBOARD_FREDI || defined LN_SW_USE_AC_AS_IN_FREDI)
 	// Enable Analog Comparator to Trigger the Input Capture unit
 	ACSR = (1<<ACI) | (1<<ACIS1) | (1<<ACIS0) | (1<<ACIC) ;
-  #if defined(__AVR_ATmega48__)  | defined(__AVR_ATmega48A__)  \
-    | defined(__AVR_ATmega48P__) | defined(__AVR_ATmega88__)   \
-    | defined(__AVR_ATmega88A__) | defined(__AVR_ATmega88P__)  \
-    | defined(__AVR_ATmega168__) | defined(__AVR_ATmega168A__) \
-    | defined(__AVR_ATmega168P__)| defined(__AVR_ATmega328__)  \
-    | defined(__AVR_ATmega328P__)
-    //AIN1, AIN0 digital input disable:
-    // disable digital input buffer on the pins to reduce power consumption
-    DIDR1 |= (1<<AIN1D) | (1<<AIN0D);
-  #endif
-#else
-  #ifdef LN_SW_UART_USE_AC
-    // First Enable the Analog Comparitor Power, 
-    // Set the mode to Falling Edge
-    // Enable Analog Comparator to Trigger the Input Capture unit
-	  ACSR = (1<<ACI) | (1<<ACIS1) | (1<<ACIC) | (1<<ACBG);
-    TCCR1B |= (1<<ICES1);
-  #else
-    // Turn off the Analog Comparator
-    ACSR = 1<<ACD ;
-  #endif
-//	TCCR1B |= (1<<ICNC1) ;    		// Enable Noise Canceller 
 #endif
 
   lnState = LN_ST_IDLE ;
