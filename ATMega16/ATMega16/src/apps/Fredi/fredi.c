@@ -491,7 +491,7 @@ int main(void)
 		rSlot.slot      = 0;                        //slot number for this request                         
 		rSlot.stat      = 0;                        // slot status                                          
 		rSlot.adr       = 0;                        // loco address                                         
-		rSlot.spd       = 0;                       // command speed                                        
+		rSlot.spd       = 0;						// command speed                                        
 		rSlot.dirf      = 0;                        // direction and F0-F4 bits                             
 		rSlot.trk       = 0;                        // track status                                         
 		rSlot.ss2       = 0;                        // slot status 2 (tells how to use ID1/ID2 & ADV Consist
@@ -568,6 +568,12 @@ int main(void)
 	}*/
 } // end of main
 
+void printRxLocoNetMessage(void) {
+	for(int i = 0;i < 16; i++) {
+		printf("%02hhx", RxPacket->data[i]);
+	}
+	printf("\n");
+}
 
 /******************************************************FunctionHeaderBegin******
  * CREATED     : 2005-01-29
@@ -582,10 +588,11 @@ void vProcessRxLoconetMessage(void)
 {
 	
   RxPacket = recvLocoNetPacket() ;
-  for(int i = 0;i < 16; i++) 
-	printf("%02hhx", RxPacket->data[i]);
-	printf("\n");
-	
+  
+  //for(int i = 0;i < 16; i++) 
+//	printf("%02hhx", RxPacket->data[i]);
+	//printf("\n");
+	//printRxLocoNetMessage();
 	//sendLocoNetWriteSlotData(&rSlot);
 	
   if (RxPacket)
@@ -687,6 +694,8 @@ void vProcessRxLoconetMessage(void)
 //  Set Slot Speed
 /***************************************/
     case OPC_LOCO_SPD:
+	printf("LOCO_SPD: ");
+	printRxLocoNetMessage();
       if (  (bThrState         == THR_STATE_CONNECTED)
          && (RxPacket->data[1] == rSlot.slot         ))
       {
@@ -701,6 +710,8 @@ void vProcessRxLoconetMessage(void)
 //  Set Slot Direction and F0 to F4
 /***************************************/
     case OPC_LOCO_DIRF:
+		printf("LOCO_DIRF: ");
+		printRxLocoNetMessage();
       if (  (bThrState         == THR_STATE_CONNECTED)
          && (RxPacket->data[1] == rSlot.slot         ))
       {
@@ -747,6 +758,8 @@ void vProcessRxLoconetMessage(void)
 //  Set Slot Sound Functions, 
 /***************************************/
     case OPC_LOCO_SND:
+		printf("LOCO_SND: ");
+		printRxLocoNetMessage();
       if (  (bThrState         == THR_STATE_CONNECTED)
          && (RxPacket->data[1] == rSlot.slot         ))
       {
@@ -814,7 +827,7 @@ void debounceCounterKeyPressed(uint8_t kID, uint8_t dC, uint8_t kP) {
 void vProcessKey(void)
 {
 	//printf("ProcessKey \n");
-
+/*
 	//Richtungstasten
 	if (lastLED1State == 1) {
 		if (bit_is_clear(PINC,0) && keyPressed == 0) { //LED1, Richtungstaste1
@@ -828,10 +841,11 @@ void vProcessKey(void)
 				debounceCounterKeyPressed(1,0,1);
 			}
 		} else if(bit_is_set(PINC,0) && keyPressed == 1 && keyID == 1) {
-			printf("bit is set \n");
+			printf("KID = 1 RESET \n");
 			debounceCounterKeyPressed(0,0,0);
 		} 
 	}
+	
 	if (lastLED1State == 0) {
 		if (bit_is_clear(PINC,0) && keyPressed == 0) { //LED1, Richtungstaste1
 			if(debounceCounter < debounceMax) {
@@ -844,12 +858,32 @@ void vProcessKey(void)
 				debounceCounterKeyPressed(1,0,1);
 			}
 		} else if(bit_is_set(PINC,0) && keyPressed == 1 && keyID == 1) {
-			printf("bit is set \n");
+			printf("KID = 1 AUF ROT RESET \n");
 			debounceCounterKeyPressed(0,0,0);
 		}		   
 	}	
-	
-		/*
+	*/
+		if (bit_is_clear(PINC,0) && keyPressed == 0) { //LED1, Richtungstaste1
+			if(debounceCounter < debounceMax) {
+				debounceCounter++;
+				printf("LED1State = 1 ,  counter \n");
+			} else if (debounceCounter == debounceMax) {
+				if(lastLED1State == 0) {
+					PORTA |= (1 << LED1);
+					lastLED1State = 1;
+				} else if (lastLED1State == 1) {
+					PORTA &= ~(1 << LED1);
+					lastLED1State = 0;
+				}
+				debounceCounterKeyPressed(1,0,1);
+			}
+		} else if(bit_is_set(PINC,0) && keyPressed == 1 && keyID == 1) {
+			printf("KID = 1 RESET \n");
+			debounceCounterKeyPressed(0,0,0);
+		}
+
+/*
+		
 	   if (lastLED1State == 1) {
 		   if (bit_is_clear(PINC,0) && F0counter < 7 && keyPressed == 0) { //LED1, Richtungstaste1
 				F0counter++;
@@ -865,7 +899,8 @@ void vProcessKey(void)
 			    F0counter = 0;
 				keyPressed = 0;
 		   }			   
-		}
+		}*/
+		/*
 		if (lastLED1State == 0) {
 		   if (bit_is_clear(PINC,0) && F0counter < 7 && keyPressed == 0) { //LED1, Richtungstaste1
 				F0counter++;
@@ -978,7 +1013,7 @@ void vProcessKey(void)
 		
 	//Funktionstasten-L1 , keyID = 5
 
-	if (bit_is_clear(PINC,7) && keyPressed == 0 ) { 
+	if (bit_is_clear(PINC,7) && keyPressed == 0) { 
 	
 		if(debounceCounter < debounceMax) {
 				debounceCounter++;
@@ -989,7 +1024,7 @@ void vProcessKey(void)
 				sendLocoNet4BytePacketTry(0xA0,0x08,0x13,0x44);
 		}
 	} else if(bit_is_set(PINC,7) && keyPressed == 1 && keyID == 5) {
-			printf("bit is set \n");
+			printf("KID = 5 RESET \n");
 			debounceCounterKeyPressed(0,0,0);
 	}
 	
