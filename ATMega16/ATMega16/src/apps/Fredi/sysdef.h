@@ -13,6 +13,8 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
     $Id: sysdef.h,v 1.16 2011/08/04 12:41:35 pischky Exp $
 ******************************************************************************/
+//#define TX_START_MEASUREMENT
+
 #ifndef _SYSDEF_H_
 #define _SYSDEF_H_
 
@@ -43,12 +45,12 @@
 /******************************************************************************/
 
 #ifndef F_CPU
-  #define F_CPU 16000000                                        //CPU-Speed auf 16Mhz gesetzt
+  #define F_CPU 16000000                                       //CPU-Speed auf 16Mhz gesetzt
 #endif
 
 #if defined(__AVR_ATmega16__)
-  #define LN_TIMER_TX_RELOAD_ADJUST    98 // 13.3 us delay for FREDI an ATmega8
-                                          // avr-gcc (WinAVR 20100110) 4.3.3
+  #define LN_TIMER_TX_RELOAD_ADJUST    85// 13.3 us delay for FREDI an ATmega8
+                                          // avr-gcc (WinAVR 20100110) 4.3.3213
 #else
   #error "unknown mcu"
 #endif

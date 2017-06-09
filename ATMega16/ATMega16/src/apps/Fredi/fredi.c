@@ -74,13 +74,20 @@ inline uint8_t debounce(uint8_t pin, uint8_t port);
 #define TIMER_PRESCALER_CODE  4  
 #define TIMER_PRESCALER_COUNT 256L
 
+static volatile byte	debounceCounter		= 0;
+static volatile byte	debounceMax			= 3; // need to set ticks for keys
+static volatile byte	keyID				= 0;
+
 static volatile byte    lastLED1State     = 0;
 static volatile byte    lastLED2State     = 0;
 static volatile byte    lastLED3State     = 0;
 static volatile byte    lastLED4State     = 0;
 static volatile byte	F0counter = 0;
+
 static volatile byte	keyPressed = 0;
 static volatile byte	ReglerKeysActive = 0;
+
+
 
 
 /******************************************************************************/
@@ -306,10 +313,10 @@ void initKeys( void )
 		
 		PORT_B |= FUNK_L_2;
 		DDR_B   &= ~( _BV(FUNK_L_2) );
-		
+		/*
 		PORT_B |= FUNK_L_3;
 		DDR_B   &= ~( _BV(FUNK_L_3) );
-		
+		*/
 		PORT_C |= FUNK_L_4;
 		DDR_C   &= ~( _BV(FUNK_L_4) );
 		
@@ -341,6 +348,7 @@ void initKeys( void )
 		
 		DDR_C	|=	_BV(LED4);
 		PORT_C	&=	~_BV(LED4);
+		
 }
 
 
@@ -403,6 +411,7 @@ void vSetState( byte bState )
     break;
   case THR_STATE_SELFTEST:
     bLEDReload = LED_SELFTEST_TIME;
+	printf("selftest \n");
     break;
   case THR_STATE_SELFTEST_DONE:
     bLEDReload = LED_SELFTEST_DONE_TIME;
@@ -489,6 +498,8 @@ int main(void)
 		rSlot.adr2      = 0;                        // loco address high                                   
 		rSlot.snd       = 0;                        // Sound 1-4 / F5-F8                                    
 
+
+
 		initLocoNet(&RxBuffer) ;
 		printf("Init Loconet \n");
 		
@@ -498,9 +509,17 @@ int main(void)
 		//Keys
 		initKeys();
 		printf("init Keys \n");
-	      
+		
+		
+		
+		//Timer
+		initTimer();
+		
+	    addTimerAction(&MessageTimer, 0, MessageTimerAction, 0, TIMER_SLOW ) ;
 
-
+		
+		// switch LED 4
+		PORTC |= (1 << LED4);
 
 		//Timer
 		
@@ -509,29 +528,44 @@ int main(void)
 		sbi(TIMSK, TOIE0) ;
 		TCCR0 = (TCCR0 & 0xF8) | TIMER_PRESCALER_CODE ;
 	  
-		//addTimerAction(&MessageTimer, 0, MessageTimerAction, 0, TIMER_SLOW ) ;
-
-		PORTC |= (1 << LED4);
+		addTimerAction(&MessageTimer, 0, MessageTimerAction, 0, TIMER_SLOW ) ;
+	
 		
-		cli();
-	/*	
-			while(1) {
-				
-				PORTA |= (1 << LED2); // ROT
-				_delay_ms(500);
-				PORTA &= ~(1 << LED2); // GRÃœN
-			}
-	*/	
+		
+		sei();
+		
 	while (1)
-	{
-		//vProcessRxLoconetMessage();
+	{	
+		vProcessRxLoconetMessage();
 		vProcessKey();
-		//vProcessRxLoconetMessage();
+		vProcessRxLoconetMessage();
 		//vProcessPoti();
 		//vProcessRxLoconetMessage();
 		//processTimerActions();
 	
 	}
+	
+/*
+	int16_t counter = 0;
+	//sendLocoNetMove(0,88);
+	//sendLocoNet4BytePacketTry(0xA0,0x05,0x26,0x19);
+	while (1)
+	{
+		vProcessRxLoconetMessage();
+		vProcessKey();
+		
+		counter++;
+		//printf("counter = %u", counter);
+		//printf("\n");
+		if(counter >= 250) {	
+			//sendLocoNet4BytePacketTry(0xA0,0x08,0x13,0x44);
+			counter = 0;
+			//printf("counter > 200 \n");
+			
+			//sendLocoNetWriteSlotData(&rSlot);
+			
+		}
+	}*/
 } // end of main
 
 
@@ -755,7 +789,7 @@ void vProcessRxLoconetMessage(void)
 static volatile byte	debounceCounter = 0;
 static volatile byte	debounceTicks = 60;
 
-inline uint8_t debounce(uint8_t pin, uint8_t port)
+uint8_t debounce(uint8_t pin, uint8_t port)
 {
 	
 	if(bit_is_clear(pin,port)) {
@@ -771,16 +805,51 @@ inline uint8_t debounce(uint8_t pin, uint8_t port)
 	}
 }	
 */
-
+void debounceCounterKeyPressed(uint8_t kID, uint8_t dC, uint8_t kP) {
+	keyID				= kID;
+	debounceCounter		= dC;
+	keyPressed			= kP;
+}
 
 void vProcessKey(void)
 {
 	//printf("ProcessKey \n");
 
-	
 	//Richtungstasten
+	if (lastLED1State == 1) {
+		if (bit_is_clear(PINC,0) && keyPressed == 0) { //LED1, Richtungstaste1
+			if(debounceCounter < debounceMax) {
+				debounceCounter++;
+				printf("LED1State = 1 ,  counter \n");				   
+			} else if (debounceCounter == debounceMax) {
+				PORTA &= ~(1 << LED1);
+				lastLED1State = 0;
+				printf("LED1 AUF GRUEN \n");
+				debounceCounterKeyPressed(1,0,1);
+			}
+		} else if(bit_is_set(PINC,0) && keyPressed == 1 && keyID == 1) {
+			printf("bit is set \n");
+			debounceCounterKeyPressed(0,0,0);
+		} 
+	}
+	if (lastLED1State == 0) {
+		if (bit_is_clear(PINC,0) && keyPressed == 0) { //LED1, Richtungstaste1
+			if(debounceCounter < debounceMax) {
+				debounceCounter++;
+				printf("LED1State = 0 ,  counter \n");
+			} else if (debounceCounter == debounceMax) {
+				PORTA |= (1 << LED1);
+				lastLED1State = 1;
+				printf("LED1 AUF ROT \n");
+				debounceCounterKeyPressed(1,0,1);
+			}
+		} else if(bit_is_set(PINC,0) && keyPressed == 1 && keyID == 1) {
+			printf("bit is set \n");
+			debounceCounterKeyPressed(0,0,0);
+		}		   
+	}	
 	
-	
+		/*
 	   if (lastLED1State == 1) {
 		   if (bit_is_clear(PINC,0) && F0counter < 7 && keyPressed == 0) { //LED1, Richtungstaste1
 				F0counter++;
@@ -907,80 +976,64 @@ void vProcessKey(void)
 		}
 		//sendLocoNetDirf(&rSlot4);
 		
-	//Funktionstasten-L
+	//Funktionstasten-L1 , keyID = 5
 
-		if( bit_is_clear(PINC,7)) { //Funktionstaste-L-1
-			while ((bit_is_clear(PINC,7)) && (F0counter < 19)) {
-				F0counter++;
-				_delay_ms(100);
-			}
-			if (F0counter == 19) {
-				while (bit_is_clear(PINC,7)) {
-					_delay_ms(20);
-				}
-				PORTA &= ~(1 << LED2);
+	if (bit_is_clear(PINC,7) && keyPressed == 0 ) { 
+	
+		if(debounceCounter < debounceMax) {
+				debounceCounter++;
+			} else if (debounceCounter == debounceMax) {
 				ReglerKeysActive = 1;
+				debounceCounterKeyPressed(5,0,1);
 				printf("ReglerKeyActive 1 \n");
-				F0counter = 0;
-			} else if (F0counter < 19) {
-				F0counter = 0;
-				//Loconet
-			}
+				sendLocoNet4BytePacketTry(0xA0,0x08,0x13,0x44);
 		}
-		
-		if( bit_is_clear(PINB,0)) { //Funktionstaste-L-2
-			while ((bit_is_clear(PINB,0)) && (F0counter < 19)) {
-				F0counter++;
-				_delay_ms(100);
-			}
-			if (F0counter == 19) {
-				while (bit_is_clear(PINC,7)) {
-					_delay_ms(20);
-				}
+	} else if(bit_is_set(PINC,7) && keyPressed == 1 && keyID == 5) {
+			printf("bit is set \n");
+			debounceCounterKeyPressed(0,0,0);
+	}
+	
+	// Funktionstaste-L2 , keyID = 6
+	if (bit_is_clear(PINB,0) && keyPressed == 0 && (ReglerKeysActive != 2)) { //LED1, Richtungstaste1
+		if(debounceCounter < debounceMax) {
+				debounceCounter++;
+			} else if (debounceCounter == debounceMax) {
 				ReglerKeysActive = 2;
-				F0counter = 0;
-			} else if (F0counter < 19) {
-				F0counter = 0;
-				//Loconet
-			}
+				debounceCounterKeyPressed(6,0,1);
+				printf("ReglerKeyActive 2 \n");
 		}
-		
-		//TODO ReglerKeysActive zurzeit noch auf Regler 1
-		if( bit_is_clear(PINB,4)) { //Funktionstaste-L-3
-			while ((bit_is_clear(PINB,4)) && (F0counter < 19)) {
-				F0counter++;
-				_delay_ms(100);
-			}
-			if (F0counter == 19) {
-				while (bit_is_clear(PINB,4)) {
-					_delay_ms(20);
-				}
-				PORTA &= ~(1 << LED2);
-				ReglerKeysActive = 1;
-				F0counter = 0;
-				} else if (F0counter < 19) {
-				F0counter = 0;
-				//Loconet
-			}
+	} else if(bit_is_set(PINB,0) && keyPressed == 1 && keyID == 6) {
+		printf("bit is set \n");
+		debounceCounterKeyPressed(0,0,0);
+	
+	// Funktionstaste-L3 , keyID = 7
+	if (bit_is_clear(PINB,4) && keyPressed == 0 && (ReglerKeysActive != 3)) { 
+		if(debounceCounter < debounceMax) {
+				debounceCounter++;
+			} else if (debounceCounter == debounceMax) {
+				ReglerKeysActive = 3;
+				debounceCounterKeyPressed(7,0,1);
+				printf("ReglerKeyActive 3 \n");
 		}
-		
-		//TODO ReglerKeysActive zurzeit noch auf Regler 2
-		if( bit_is_clear(PINA,2)) { //Funktionstaste-L-4
-			while ((bit_is_clear(PINA,2)) && (F0counter < 19)) {
-				F0counter++;
-				_delay_ms(100);
-			}
-			if (F0counter == 19) {
-				while (bit_is_clear(PINA,2)) {
-					_delay_ms(20);
-				}
-				ReglerKeysActive = 2;
-				F0counter = 0;
-				} else if (F0counter < 19) {
-				F0counter = 0;
-				//Loconet
-			}
+	} else if(bit_is_set(PINB,4) && keyPressed == 1 && keyID == 7) {
+		printf("bit is set \n");
+		debounceCounterKeyPressed(0,0,0);
+	}	
+	
+	// Funktionstaste-L4 , keyID = 8
+	if (bit_is_clear(PINA,2) && keyPressed == 0 && (ReglerKeysActive != 4)) {
+		if(debounceCounter < debounceMax) {
+				debounceCounter++;
+			} else if (debounceCounter == debounceMax) {
+				ReglerKeysActive = 4;
+				debounceCounterKeyPressed(8,0,1);
+				printf("ReglerKeyActive 3 \n");
 		}
+		} else if(bit_is_set(PINA,2) && keyPressed == 1 && keyID == 8) {
+		printf("bit is set \n");
+		debounceCounterKeyPressed(0,0,0);
+	}	
+}
 		
 
 	//Funktionstasten
@@ -997,7 +1050,7 @@ void vProcessKey(void)
 				PORTA |= (1 << LED1); // ROT
 				break;
 				case 2:
-				PORTA &= ~(1 << LED2); // GRÃœN
+				PORTA &= ~(1 << LED2); // GRÜN
 				break;
 			}
 			//Loconet
@@ -1010,7 +1063,7 @@ void vProcessKey(void)
 				case 0:
 				break;
 				case 1:
-				PORTA &= ~(1 << LED1); // GRÃœN
+				PORTA &= ~(1 << LED1); // GRÜN
 				break;
 				case 2:
 				PORTA |= (1 << LED2); // ROT
@@ -1029,7 +1082,7 @@ void vProcessKey(void)
 				PORTA |= (1 << LED3); // ROT
 				break;
 				case 2:
-				PORTA &= ~(1 << LED3); // GRÃœN
+				PORTA &= ~(1 << LED3); // GRÜN
 				break;
 			}
 			//Loconet
@@ -1042,7 +1095,7 @@ void vProcessKey(void)
 				case 0:
 				break;
 				case 1:
-				PORTA &= ~(1 << LED4); // GRÃœN
+				PORTA &= ~(1 << LED4); // GRÜN
 				break;
 				case 2:
 				PORTA |= (1 << LED4); // ROT
@@ -1054,7 +1107,7 @@ void vProcessKey(void)
 		if(rSlot.adr != 0) {
 			F0counter = 20;
 			while(F0counter > 0) {
-				PORTA &= ~(1 << LED1); // GRÃœN
+				PORTA &= ~(1 << LED1); // GRÜN
 				_delay_ms(1000);
 				PORTA |= (1 << LED1); // ROT
 				_delay_ms(1000);
