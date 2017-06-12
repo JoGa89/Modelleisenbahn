@@ -832,7 +832,7 @@ void vProcessKey(void)
 			keyID = 1;
 			if(debounceCounter < debounceMax) {
 				debounceCounter++;
-				printf("LED1State = 1 ,  counter \n");
+				//printf("LED1State = 1 ,  counter \n");
 			} else if (debounceCounter == debounceMax) {
 				if(lastLED1State == 0) {
 					PORTA |= (1 << LED1);
@@ -853,7 +853,7 @@ void vProcessKey(void)
 			keyID = 2;
 			if(debounceCounter < debounceMax) {
 				debounceCounter++;
-				printf("LED2State = 1 ,  counter \n");
+				//printf("LED2State = 1 ,  counter \n");
 				} else if (debounceCounter == debounceMax) {
 				if(lastLED2State == 0) {
 					PORTA |= (1 << LED2);
@@ -874,7 +874,7 @@ void vProcessKey(void)
 			keyID = 3;
 			if(debounceCounter < debounceMax) {
 				debounceCounter++;
-				printf("LED2State = 1 ,  counter \n");
+				//printf("LED2State = 1 ,  counter \n");
 			} else if (debounceCounter == debounceMax) {
 				if(lastLED3State == 0) {
 					PORTC |= (1 << LED3);
@@ -895,7 +895,7 @@ void vProcessKey(void)
 			keyID = 4;
 			if(debounceCounter < debounceMax) {
 				debounceCounter++;
-				printf("LED4State = 1 ,  counter \n");
+				//printf("LED4State = 1 ,  counter \n");
 			} else if (debounceCounter == debounceMax) {
 				if(lastLED4State == 0) {
 					PORTC |= (1 << LED4);
@@ -912,22 +912,24 @@ void vProcessKey(void)
 		}		
 
 	//Funktionstasten-L1 , keyID = 5
-	/*
+	
 	if (bit_is_clear(PINC,7) && keyPressed == 0 && (ReglerKeysActive != 1)) { 
+		keyID = 5;
 		if(debounceCounter < debounceMax) {
 				debounceCounter++;
-			} else if (debounceCounter == debounceMax) {
+		} else if (debounceCounter == debounceMax) {
 				ReglerKeysActive = 1;
 				debounceCounterKeyPressed(5,0,1);
 				printf("ReglerKeyActive 1 \n");
 		}
-	} else if(bit_is_set(PINC,7) && keyPressed == 1  && keyID == 5) {
+	} else if(bit_is_set(PINC,7) && keyID == 5) {
 			printf("KID = 5 RESET \n");
 			debounceCounterKeyPressed(0,0,0);
 	}
-	/*
+	
 	// Funktionstaste-L2 , keyID = 6
 	if (bit_is_clear(PINB,0) && keyPressed == 0 && (ReglerKeysActive != 2)) { //LED1, Richtungstaste1
+		keyID = 6;
 		if(debounceCounter < debounceMax) {
 				debounceCounter++;
 			} else if (debounceCounter == debounceMax) {
@@ -935,13 +937,14 @@ void vProcessKey(void)
 				debounceCounterKeyPressed(6,0,1);
 				printf("ReglerKeyActive 2 \n");
 		}
-	} else if(bit_is_set(PINB,0) && keyPressed == 1 && keyID == 6) {
-			printf("KID = 6 RESET \n");
+	} else if(bit_is_set(PINB,0) && keyID == 6) {
+		printf("KID = 6 RESET \n");
 		debounceCounterKeyPressed(0,0,0);
 	}
 	
 	// Funktionstaste-L3 , keyID = 7
 	if (bit_is_clear(PINB,4) && keyPressed == 0 && (ReglerKeysActive != 3)) { 
+		keyID = 7;
 		if(debounceCounter < debounceMax) {
 				debounceCounter++;
 			} else if (debounceCounter == debounceMax) {
@@ -949,13 +952,14 @@ void vProcessKey(void)
 				debounceCounterKeyPressed(7,0,1);
 				printf("ReglerKeyActive 3 \n");
 		}
-	} else if(bit_is_set(PINB,4) && keyPressed == 1 && keyID == 7) {
-			printf("KID = 7 RESET \n");
+	} else if(bit_is_set(PINB,4) && keyID == 7) {
+		printf("KID = 7 RESET \n");
 		debounceCounterKeyPressed(0,0,0);
 	}	
 	
 	// Funktionstaste-L4 , keyID = 8
 	if (bit_is_clear(PINA,2) && keyPressed == 0 && (ReglerKeysActive != 4)) {
+		keyID = 8;
 		if(debounceCounter < debounceMax) {
 				debounceCounter++;
 			} else if (debounceCounter == debounceMax) {
@@ -963,12 +967,10 @@ void vProcessKey(void)
 				debounceCounterKeyPressed(8,0,1);
 				printf("ReglerKeyActive 3 \n");
 		}
-		} else if(bit_is_set(PINA,2) && keyPressed == 1 && keyID == 8) {
-			printf("KID = 8 RESET \n");
+	} else if(bit_is_set(PINA,2) && keyID == 8) {
+		printf("KID = 8 RESET \n");
 		debounceCounterKeyPressed(0,0,0);
 	}
-*/
-		
 
 	//Funktionstasten
 
