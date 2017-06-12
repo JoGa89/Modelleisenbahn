@@ -513,7 +513,7 @@ int main(void)
 		
 		
 		//Timer
-		initTimer();
+		//initTimer();
 		
 	    addTimerAction(&MessageTimer, 0, MessageTimerAction, 0, TIMER_SLOW ) ;
 
@@ -528,7 +528,7 @@ int main(void)
 		sbi(TIMSK, TOIE0) ;
 		TCCR0 = (TCCR0 & 0xF8) | TIMER_PRESCALER_CODE ;
 	  
-		addTimerAction(&MessageTimer, 0, MessageTimerAction, 0, TIMER_SLOW ) ;
+		//addTimerAction(&MessageTimer, 0, MessageTimerAction, 0, TIMER_SLOW ) ;
 	
 		
 		
@@ -590,7 +590,7 @@ void vProcessRxLoconetMessage(void)
   RxPacket = recvLocoNetPacket() ;
   
   //for(int i = 0;i < 16; i++) 
-//	printf("%02hhx", RxPacket->data[i]);
+	//printf("%02hhx", RxPacket->data[i]);
 	//printf("\n");
 	//printRxLocoNetMessage();
 	//sendLocoNetWriteSlotData(&rSlot);
@@ -607,8 +607,10 @@ void vProcessRxLoconetMessage(void)
       {
       case THR_STATE_ACQUIRE_LOCO_GET: // response of Dispatch Get
         {
+			printf("loconet copy \n");
           if ((RxPacket->data[3] & LOCO_IDLE) == LOCO_IDLE)
           {
+			  printf("loco is idle copy slots \n");
             vCopySlotFromRxPacket();
             vSetState(THR_STATE_ACQUIRE_LOCO_WRITE);
             sendLocoNetWriteSlotData(&rSlot);
@@ -678,6 +680,7 @@ void vProcessRxLoconetMessage(void)
       case THR_STATE_ACQUIRE_LOCO_WRITE:
         if (RxPacket->data[1] == (OPC_WR_SL_DATA & 0x7f))
         {
+			printf("LOCO_WRITE \n");
           eeprom_write_byte(&abEEPROM[EEPROM_ADR_LOCO_LB],  rSlot.adr);
           eeprom_write_byte(&abEEPROM[EEPROM_ADR_LOCO_HB],  rSlot.adr2);
           eeprom_write_byte(&abEEPROM[EEPROM_DECODER_TYPE], rSlot.stat & DEC_MODE_MASK);
@@ -965,7 +968,7 @@ void vProcessKey(void)
 			} else if (debounceCounter == debounceMax) {
 				ReglerKeysActive = 4;
 				debounceCounterKeyPressed(8,0,1);
-				printf("ReglerKeyActive 3 \n");
+				printf("ReglerKeyActive 4 \n");
 		}
 	} else if(bit_is_set(PINA,2) && keyID == 8) {
 		printf("KID = 8 RESET \n");
@@ -973,6 +976,40 @@ void vProcessKey(void)
 	}
 
 	//Funktionstasten
+
+	// Funktionstaste-1 , keyID = 9
+	if (bit_is_clear(PIND,3) && keyPressed == 0 ) {
+		keyID = 9;
+		if(debounceCounter < debounceMax) {
+			debounceCounter++;
+		} else if (debounceCounter == debounceMax) {
+			switch (ReglerKeysActive)
+			{
+				case 0:
+				break;
+				case 1:
+				vSetState(THR_STATE_ACQUIRE_LOCO_GET);
+				sendLocoNetMove(0, 0);
+				printf(" id1 = %u", rSlot.id1);
+				printf("\n");
+				printf(" id2 = %u", rSlot.id2);
+
+				break;
+				case 2:
+				rSlot.spd = 50;
+				printf("spd = %u \n", rSlot.spd);
+				printf(" id1 = %u \n", rSlot.adr);
+				
+				sendLocoNetSpd(&rSlot);
+				break;
+			}				
+			debounceCounterKeyPressed(9,0,1);
+		}
+	} else if(bit_is_set(PIND,3) && keyID == 9) {
+		printf("KID = 9 RESET \n");
+		debounceCounterKeyPressed(0,0,0);
+	}
+/*
 
 		//Funktionstaste-1
 		if( bit_is_clear(PIND, 3) ) { //Funktionstaste-1
@@ -982,8 +1019,12 @@ void vProcessKey(void)
 				break;
 				case 1:
 				
-				//vSetState(THR_STATE_ACQUIRE_LOCO_GET);
-				//sendLocoNetMove(0, 0);
+				vSetState(THR_STATE_ACQUIRE_LOCO_GET);
+				printf(" id = % ", rSlot.id1);
+				printf("\n");
+				sendLocoNetMove(0, 0);
+				printf(" id = % ", rSlot.id1);
+				printf("\n");				
 				PORTA |= (1 << LED1); // ROT
 				break;
 				case 2:
@@ -992,7 +1033,7 @@ void vProcessKey(void)
 			}
 			//Loconet
 		}
-	
+*/	
 		//Funktionstaste-2
 		if( bit_is_clear(PIND, 4) ) { //Funktionstaste-2
 			switch (ReglerKeysActive)
@@ -1281,6 +1322,9 @@ void vCopySlotFromRxPacket(void)
     rSlot.stat    = RxPacket->data[ 3];                 // slot status
     rSlot.adr     = RxPacket->data[ 4];                 // loco address
     rSlot.adr2    = RxPacket->data[ 9];                 // loco address high
+	printf("rslot bei copy:");
+	printf("%02hhx",rSlot.adr2);
+	printf("\n");
   }
   else
   {
