@@ -76,6 +76,8 @@ inline uint8_t debounce(uint8_t pin, uint8_t port);
 
 static volatile byte	UART_ON = 0;
 
+static volatile byte	rSlot1State = 0;
+
 static volatile byte	debounceCounter		= 0;
 static volatile byte	debounceMax			= 3; // need to set ticks for keys
 static volatile byte	keyID				= 0;
@@ -381,15 +383,12 @@ void vSetState( byte bState )
   case THR_STATE_CONNECTED:         // show direction at state connected
     if (rSlot.dirf & 0x20)
     {
-      //LED_PORT &= ~_BV(LED_GREEN_R);
-      //LED_PORT |=  _BV(LED_GREEN_L); 
-	   // PORT_A	&=	~_BV(LED1);
+
+	  PORT_A	|=	_BV(LED1);
     }
     else
     {
-      //LED_PORT &= ~_BV(LED_GREEN_L); 
-      //LED_PORT |=  _BV(LED_GREEN_R);
-	  //PORT_A	|=	_BV(LED1);
+	  PORT_A	&=	~_BV(LED1);
     }
     //LED_PORT &= ~_BV(LED_RED);
 
@@ -499,8 +498,27 @@ int main(void)
 		rSlot.trk       = 0;                        // track status                                         
 		rSlot.ss2       = 0;                        // slot status 2 (tells how to use ID1/ID2 & ADV Consist
 		rSlot.adr2      = 0;                        // loco address high                                   
-		rSlot.snd       = 0;                        // Sound 1-4 / F5-F8                                    
+		rSlot.snd       = 0;                        // Sound 1-4 / F5-F8
+		
+		printf("rslot adr vorher = %u ", rSlot.adr);
+		printf("\n");
+		if(rSlot.adr == 0) {
 
+			rSlot.adr		= eeprom_read_byte(&abEEPROM[EEPROM_ADR_LOCO_LB]);
+			rSlot.adr2		= eeprom_read_byte(&abEEPROM[EEPROM_ADR_LOCO_HB]);
+			printf("adr %u ", eeprom_read_byte(&abEEPROM[EEPROM_ADR_LOCO_HB] ));
+			printf("\n");
+	/*
+        eeprom_write_byte(&abEEPROM[EEPROM_ADR_LOCO_LB],  rSlot.adr);
+        eeprom_write_byte(&abEEPROM[EEPROM_ADR_LOCO_HB],  rSlot.adr2);
+
+        eeprom_write_byte(&abEEPROM[EEPROM_DECODER_TYPE], rSlot.stat & DEC_MODE_MASK);		*/	
+		} else {
+
+		}
+				
+		printf("rslot adr nachher = %u ", rSlot.adr);
+		printf("\n");
 
 
 		initLocoNet(&RxBuffer) ;
@@ -689,6 +707,9 @@ void vProcessRxLoconetMessage(void)
           eeprom_write_byte(&abEEPROM[EEPROM_ADR_LOCO_HB],  rSlot.adr2);
           eeprom_write_byte(&abEEPROM[EEPROM_DECODER_TYPE], rSlot.stat & DEC_MODE_MASK);
 
+
+			printf("eeprom adr: %u ", eeprom_read_byte(&abEEPROM[EEPROM_ADR_LOCO_LB]));
+			
           vSetState(THR_STATE_CONNECTED);
         }
         break;
@@ -732,7 +753,7 @@ void vProcessRxLoconetMessage(void)
           {
             rSlot.dirf &= 0x20;                       // get direction of fredi
             rSlot.dirf |= (RxPacket->data[2] & ~0x20); // and add F0..F4
-            sendLocoNetDirf(&rSlot);
+            //sendLocoNetDirf(&rSlot);
           }
           else
           {
@@ -747,17 +768,10 @@ void vProcessRxLoconetMessage(void)
         if (rSlot.dirf & 0x20)
         {
 		  //PORT_A	|=	_BV(LED1);
-		  /*
-          LED_PORT &= ~_BV(LED_GREEN_R);
-          LED_PORT |=  _BV(LED_GREEN_L); 
-		  */
         }
         else
         {
-			/*
-          LED_PORT &= ~_BV(LED_GREEN_L); 
-          LED_PORT |=  _BV(LED_GREEN_R);
-		  */
+
         }
       }
       break;
@@ -836,6 +850,11 @@ void vProcessKey(void)
 	//printf("ProcessKey \n");
 	//RICHT-G-1 = keyID = 1
 		if (bit_is_clear(PINC,0) && keyPressed == 0) { //LED1, Richtungstaste1
+			if(rSlot1State) {
+				printf()
+				vSetState(THR_STATE_ACQUIRE_LOCO_GET);
+				sendLocoNetMove(0, 0);
+			}
 			keyID = 1;
 			if(debounceCounter < debounceMax) {
 				debounceCounter++;
@@ -972,6 +991,7 @@ void vProcessKey(void)
 				ReglerKeysActive = 4;
 				debounceCounterKeyPressed(8,0,1);
 				if(UART_ON) { printf("ReglerKeyActive 4 \n"); }
+				printf("adr2 %u ", eeprom_read_byte(&abEEPROM[EEPROM_ADR_LOCO_LB]));
 		}
 	} else if(bit_is_set(PINA,2) && keyID == 8) {;
 		debounceCounterKeyPressed(0,0,0);
@@ -990,8 +1010,7 @@ void vProcessKey(void)
 				case 0:
 				break;
 				case 1:
-				vSetState(THR_STATE_ACQUIRE_LOCO_GET);
-				sendLocoNetMove(0, 0);
+
 				if(UART_ON) {
 				printf(" id1 = %u", rSlot.adr);
 				printf("\n");
