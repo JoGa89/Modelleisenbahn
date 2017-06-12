@@ -74,6 +74,8 @@ inline uint8_t debounce(uint8_t pin, uint8_t port);
 #define TIMER_PRESCALER_CODE  4  
 #define TIMER_PRESCALER_COUNT 256L
 
+static volatile byte	UART_ON = 0;
+
 static volatile byte	debounceCounter		= 0;
 static volatile byte	debounceMax			= 3; // need to set ticks for keys
 static volatile byte	keyID				= 0;
@@ -372,7 +374,7 @@ void vSetState( byte bState )
   case THR_STATE_UNCONNECTED:       // show red LED
   case THR_STATE_INIT:
   case THR_STATE_UNCONNECTED_WRITE:
-	  PORT_A	|=	_BV(LED1);
+	  //PORT_A	|=	_BV(LED1);
     bLEDReload = LED_ON;
     break;
 
@@ -381,13 +383,13 @@ void vSetState( byte bState )
     {
       //LED_PORT &= ~_BV(LED_GREEN_R);
       //LED_PORT |=  _BV(LED_GREEN_L); 
-	    PORT_A	&=	~_BV(LED1);
+	   // PORT_A	&=	~_BV(LED1);
     }
     else
     {
       //LED_PORT &= ~_BV(LED_GREEN_L); 
       //LED_PORT |=  _BV(LED_GREEN_R);
-	  PORT_A	|=	_BV(LED1);
+	  //PORT_A	|=	_BV(LED1);
     }
     //LED_PORT &= ~_BV(LED_RED);
 
@@ -411,7 +413,6 @@ void vSetState( byte bState )
     break;
   case THR_STATE_SELFTEST:
     bLEDReload = LED_SELFTEST_TIME;
-	printf("selftest \n");
     break;
   case THR_STATE_SELFTEST_DONE:
     bLEDReload = LED_SELFTEST_DONE_TIME;
@@ -459,6 +460,8 @@ void vSetState( byte bState )
 	  UCSRB = (1<<RXCIE)|(1<<RXEN) |(1<<TXEN);                  // UART TX einschalten
 	  UCSRC = (1<<URSEL)|(1<<UCSZ1)|(1<<UCSZ0);                  // Asynchron 8N1 Betrieb festlegen
 	  stdout = &mystdout;
+	  
+	  UART_ON = 1;
   }
 
 /********************************UARTFunctionsEnd******/
@@ -475,9 +478,9 @@ void vSetState( byte bState )
 int main(void)
 {
 		uart_init();
-		printf("\n------------------------- \n");
-		
-		printf("Main Anfang \n");
+		if(UART_ON) { printf("\n------------------------- \n"); }
+		if(UART_ON) { printf("Main Anfang \n"); }		
+
 	
 		RESET_RESET_SOURCE(); // Clear Reset Status Register (WDRF,BORF,EXTRF,PORF)
 	  
@@ -501,21 +504,22 @@ int main(void)
 
 
 		initLocoNet(&RxBuffer) ;
-		printf("Init Loconet \n");
+		if(UART_ON) { printf("Init Loconet \n"); }	
 		
 		//Regler
 		//potAdcInit();	  
+		//potAdcPowerOff();
 		
 		//Keys
 		initKeys();
-		printf("init Keys \n");
+		if(UART_ON) { printf("Init Keys \n"); }			
 		
 		
 		
 		//Timer
 		//initTimer();
 		
-	    addTimerAction(&MessageTimer, 0, MessageTimerAction, 0, TIMER_SLOW ) ;
+	    //addTimerAction(&MessageTimer, 0, MessageTimerAction, 0, TIMER_SLOW ) ;
 
 		
 		// switch LED 4
@@ -528,7 +532,7 @@ int main(void)
 		sbi(TIMSK, TOIE0) ;
 		TCCR0 = (TCCR0 & 0xF8) | TIMER_PRESCALER_CODE ;
 	  
-		//addTimerAction(&MessageTimer, 0, MessageTimerAction, 0, TIMER_SLOW ) ;
+		addTimerAction(&MessageTimer, 0, MessageTimerAction, 0, TIMER_SLOW ) ;
 	
 		
 		
@@ -569,10 +573,13 @@ int main(void)
 } // end of main
 
 void printRxLocoNetMessage(void) {
-	for(int i = 0;i < 16; i++) {
-		printf("%02hhx", RxPacket->data[i]);
-	}
+	if(UART_ON) { 
+		for(int i = 0;i < 16; i++) {
+			printf("%02hhx", RxPacket->data[i]);
+		}
+	
 	printf("\n");
+	}
 }
 
 /******************************************************FunctionHeaderBegin******
@@ -607,10 +614,8 @@ void vProcessRxLoconetMessage(void)
       {
       case THR_STATE_ACQUIRE_LOCO_GET: // response of Dispatch Get
         {
-			printf("loconet copy \n");
           if ((RxPacket->data[3] & LOCO_IDLE) == LOCO_IDLE)
           {
-			  printf("loco is idle copy slots \n");
             vCopySlotFromRxPacket();
             vSetState(THR_STATE_ACQUIRE_LOCO_WRITE);
             sendLocoNetWriteSlotData(&rSlot);
@@ -680,7 +685,6 @@ void vProcessRxLoconetMessage(void)
       case THR_STATE_ACQUIRE_LOCO_WRITE:
         if (RxPacket->data[1] == (OPC_WR_SL_DATA & 0x7f))
         {
-			printf("LOCO_WRITE \n");
           eeprom_write_byte(&abEEPROM[EEPROM_ADR_LOCO_LB],  rSlot.adr);
           eeprom_write_byte(&abEEPROM[EEPROM_ADR_LOCO_HB],  rSlot.adr2);
           eeprom_write_byte(&abEEPROM[EEPROM_DECODER_TYPE], rSlot.stat & DEC_MODE_MASK);
@@ -697,7 +701,7 @@ void vProcessRxLoconetMessage(void)
 //  Set Slot Speed
 /***************************************/
     case OPC_LOCO_SPD:
-	printf("LOCO_SPD: ");
+	if(UART_ON) { printf("LOCO_SPD: "); }
 	printRxLocoNetMessage();
       if (  (bThrState         == THR_STATE_CONNECTED)
          && (RxPacket->data[1] == rSlot.slot         ))
@@ -713,7 +717,7 @@ void vProcessRxLoconetMessage(void)
 //  Set Slot Direction and F0 to F4
 /***************************************/
     case OPC_LOCO_DIRF:
-		printf("LOCO_DIRF: ");
+		if(UART_ON) { printf("LOCO_DIRF: "); }
 		printRxLocoNetMessage();
       if (  (bThrState         == THR_STATE_CONNECTED)
          && (RxPacket->data[1] == rSlot.slot         ))
@@ -742,7 +746,7 @@ void vProcessRxLoconetMessage(void)
 
         if (rSlot.dirf & 0x20)
         {
-		  PORT_A	|=	_BV(LED1);
+		  //PORT_A	|=	_BV(LED1);
 		  /*
           LED_PORT &= ~_BV(LED_GREEN_R);
           LED_PORT |=  _BV(LED_GREEN_L); 
@@ -761,7 +765,7 @@ void vProcessRxLoconetMessage(void)
 //  Set Slot Sound Functions, 
 /***************************************/
     case OPC_LOCO_SND:
-		printf("LOCO_SND: ");
+		if(UART_ON) { printf("LOCO_SND: "); }
 		printRxLocoNetMessage();
       if (  (bThrState         == THR_STATE_CONNECTED)
          && (RxPacket->data[1] == rSlot.slot         ))
@@ -838,16 +842,21 @@ void vProcessKey(void)
 				//printf("LED1State = 1 ,  counter \n");
 			} else if (debounceCounter == debounceMax) {
 				if(lastLED1State == 0) {
+					rSlot.dirf |= 0x20;
+					sendLocoNetDirf(&rSlot);
 					PORTA |= (1 << LED1);
+					if(UART_ON ) {printf("dir rueckwaerts = %u \n", rSlot.dirf); }
 					lastLED1State = 1;
 				} else if (lastLED1State == 1) {
 					PORTA &= ~(1 << LED1);
+					rSlot.dirf &= 0x00;
+					sendLocoNetDirf(&rSlot);
+					if(UART_ON ) {printf("dir vorwaerts = %u \n", rSlot.dirf); }
 					lastLED1State = 0;
 				}
 				debounceCounterKeyPressed(1,0,1);
 			}
 		} else if(bit_is_set(PINC,0) && keyID == 1) {
-			printf("KID = 1 RESET \n");
 			debounceCounterKeyPressed(0,0,0);
 		}
 		
@@ -868,7 +877,6 @@ void vProcessKey(void)
 				debounceCounterKeyPressed(2,0,1);
 			}
 			} else if(bit_is_set(PINA,3) && keyID == 2) {
-			printf("KID = 2 RESET \n");
 			debounceCounterKeyPressed(0,0,0);
 		}
 
@@ -889,7 +897,6 @@ void vProcessKey(void)
 				debounceCounterKeyPressed(3,0,1);
 			}
 		} else if(bit_is_set(PINC,2) && keyID == 3) {
-			printf("KID = 3 RESET \n");
 			debounceCounterKeyPressed(0,0,0);
 		}
 
@@ -910,7 +917,6 @@ void vProcessKey(void)
 				debounceCounterKeyPressed(4,0,1);
 			}
 		} else if(bit_is_set(PINC,1) && keyID == 4) {
-			printf("KID = 4 RESET \n");
 			debounceCounterKeyPressed(0,0,0);
 		}		
 
@@ -923,10 +929,9 @@ void vProcessKey(void)
 		} else if (debounceCounter == debounceMax) {
 				ReglerKeysActive = 1;
 				debounceCounterKeyPressed(5,0,1);
-				printf("ReglerKeyActive 1 \n");
+				if(UART_ON) { printf("ReglerKeyActive 1 \n"); }
 		}
 	} else if(bit_is_set(PINC,7) && keyID == 5) {
-			printf("KID = 5 RESET \n");
 			debounceCounterKeyPressed(0,0,0);
 	}
 	
@@ -938,10 +943,9 @@ void vProcessKey(void)
 			} else if (debounceCounter == debounceMax) {
 				ReglerKeysActive = 2;
 				debounceCounterKeyPressed(6,0,1);
-				printf("ReglerKeyActive 2 \n");
+				if(UART_ON) { printf("ReglerKeyActive 2 \n"); }
 		}
 	} else if(bit_is_set(PINB,0) && keyID == 6) {
-		printf("KID = 6 RESET \n");
 		debounceCounterKeyPressed(0,0,0);
 	}
 	
@@ -953,10 +957,9 @@ void vProcessKey(void)
 			} else if (debounceCounter == debounceMax) {
 				ReglerKeysActive = 3;
 				debounceCounterKeyPressed(7,0,1);
-				printf("ReglerKeyActive 3 \n");
+				if(UART_ON) { printf("ReglerKeyActive 3 \n"); }
 		}
 	} else if(bit_is_set(PINB,4) && keyID == 7) {
-		printf("KID = 7 RESET \n");
 		debounceCounterKeyPressed(0,0,0);
 	}	
 	
@@ -968,10 +971,9 @@ void vProcessKey(void)
 			} else if (debounceCounter == debounceMax) {
 				ReglerKeysActive = 4;
 				debounceCounterKeyPressed(8,0,1);
-				printf("ReglerKeyActive 4 \n");
+				if(UART_ON) { printf("ReglerKeyActive 4 \n"); }
 		}
-	} else if(bit_is_set(PINA,2) && keyID == 8) {
-		printf("KID = 8 RESET \n");
+	} else if(bit_is_set(PINA,2) && keyID == 8) {;
 		debounceCounterKeyPressed(0,0,0);
 	}
 
@@ -990,23 +992,24 @@ void vProcessKey(void)
 				case 1:
 				vSetState(THR_STATE_ACQUIRE_LOCO_GET);
 				sendLocoNetMove(0, 0);
-				printf(" id1 = %u", rSlot.id1);
+				if(UART_ON) {
+				printf(" id1 = %u", rSlot.adr);
 				printf("\n");
 				printf(" id2 = %u", rSlot.id2);
-
+				}
 				break;
 				case 2:
 				rSlot.spd = 50;
+				if(UART_ON) {
 				printf("spd = %u \n", rSlot.spd);
 				printf(" id1 = %u \n", rSlot.adr);
-				
+				}
 				sendLocoNetSpd(&rSlot);
 				break;
 			}				
 			debounceCounterKeyPressed(9,0,1);
 		}
 	} else if(bit_is_set(PIND,3) && keyID == 9) {
-		printf("KID = 9 RESET \n");
 		debounceCounterKeyPressed(0,0,0);
 	}
 /*
@@ -1034,6 +1037,7 @@ void vProcessKey(void)
 			//Loconet
 		}
 */	
+/*
 		//Funktionstaste-2
 		if( bit_is_clear(PIND, 4) ) { //Funktionstaste-2
 			switch (ReglerKeysActive)
@@ -1081,6 +1085,7 @@ void vProcessKey(void)
 			}
 				    //Loconet
 		}
+		*/
 		/*
 		if(rSlot.adr != 0) {
 			F0counter = 20;
@@ -1322,9 +1327,11 @@ void vCopySlotFromRxPacket(void)
     rSlot.stat    = RxPacket->data[ 3];                 // slot status
     rSlot.adr     = RxPacket->data[ 4];                 // loco address
     rSlot.adr2    = RxPacket->data[ 9];                 // loco address high
+	if(UART_ON) {
 	printf("rslot bei copy:");
 	printf("%02hhx",rSlot.adr2);
 	printf("\n");
+	}
   }
   else
   {
