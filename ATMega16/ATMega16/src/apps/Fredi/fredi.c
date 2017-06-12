@@ -79,6 +79,8 @@ static volatile byte	UART_ON = 0;
 static volatile byte	rSlot1State = 0;
 
 static volatile byte	debounceCounter		= 0;
+static volatile byte	debounceShort		= 4;
+static volatile byte	debounceLong		= 8;
 static volatile byte	debounceMax			= 3; // need to set ticks for keys
 static volatile byte	keyID				= 0;
 
@@ -502,20 +504,20 @@ int main(void)
 		
 		printf("rslot adr vorher = %u ", rSlot.adr);
 		printf("\n");
+		
 		if(rSlot.adr == 0) {
 
 			rSlot.adr		= eeprom_read_byte(&abEEPROM[EEPROM_ADR_LOCO_LB]);
 			rSlot.adr2		= eeprom_read_byte(&abEEPROM[EEPROM_ADR_LOCO_HB]);
 			printf("adr %u ", eeprom_read_byte(&abEEPROM[EEPROM_ADR_LOCO_HB] ));
 			printf("\n");
+		}
 	/*
         eeprom_write_byte(&abEEPROM[EEPROM_ADR_LOCO_LB],  rSlot.adr);
         eeprom_write_byte(&abEEPROM[EEPROM_ADR_LOCO_HB],  rSlot.adr2);
 
         eeprom_write_byte(&abEEPROM[EEPROM_DECODER_TYPE], rSlot.stat & DEC_MODE_MASK);		*/	
-		} else {
 
-		}
 				
 		printf("rslot adr nachher = %u ", rSlot.adr);
 		printf("\n");
@@ -632,6 +634,8 @@ void vProcessRxLoconetMessage(void)
       {
       case THR_STATE_ACQUIRE_LOCO_GET: // response of Dispatch Get
         {
+			printf("acquire loco get: ");
+			printRxLocoNetMessage();
           if ((RxPacket->data[3] & LOCO_IDLE) == LOCO_IDLE)
           {
             vCopySlotFromRxPacket();
@@ -642,6 +646,7 @@ void vProcessRxLoconetMessage(void)
         break;
       case THR_STATE_RECONNECT_GET_SLOT: // response of Get Slot By Adress
         {
+			printf("State_recconect_GetSlot \n");
           if (  (rSlot.adr  == RxPacket->data[4])
              && (rSlot.adr2 == RxPacket->data[9]))
           { // slot not changed and in use , so we can use this slot further on
@@ -669,6 +674,7 @@ void vProcessRxLoconetMessage(void)
         break;
       case THR_STATE_RECONNECT_NULL_MOVE:
         {
+			printf("RECONNECT_NULL_MOVe \n");
           if (  (rSlot.adr  == RxPacket->data[4]) 
              && (rSlot.adr2 == RxPacket->data[9]))
           { // slot not changed and in use , so we can use this slot further on
@@ -850,30 +856,43 @@ void vProcessKey(void)
 	//printf("ProcessKey \n");
 	//RICHT-G-1 = keyID = 1
 		if (bit_is_clear(PINC,0) && keyPressed == 0) { //LED1, Richtungstaste1
-			if(rSlot1State) {
-				printf()
-				vSetState(THR_STATE_ACQUIRE_LOCO_GET);
-				sendLocoNetMove(0, 0);
-			}
-			keyID = 1;
-			if(debounceCounter < debounceMax) {
-				debounceCounter++;
-				//printf("LED1State = 1 ,  counter \n");
-			} else if (debounceCounter == debounceMax) {
-				if(lastLED1State == 0) {
-					rSlot.dirf |= 0x20;
-					sendLocoNetDirf(&rSlot);
-					PORTA |= (1 << LED1);
-					if(UART_ON ) {printf("dir rueckwaerts = %u \n", rSlot.dirf); }
-					lastLED1State = 1;
-				} else if (lastLED1State == 1) {
-					PORTA &= ~(1 << LED1);
-					rSlot.dirf &= 0x00;
-					sendLocoNetDirf(&rSlot);
-					if(UART_ON ) {printf("dir vorwaerts = %u \n", rSlot.dirf); }
-					lastLED1State = 0;
+			if(rSlot1State == 0) {
+				
+				keyID = 1;
+				if(debounceCounter < debounceShort) {
+					debounceCounter++;
+				} else if (debounceCounter == debounceShort) {
+					printf("rslotstate ist 0 \n");
+					vSetState(THR_STATE_ACQUIRE_LOCO_GET);
+					//vSetState(THR_STATE_RECONNECT_NULL_MOVE);
+					sendLocoNetMove(0, 0);					
+					if(rSlot.adr != 0) {
+						rSlot1State = 1;
+						printf("rslot1State \n");
+					}
+					debounceCounterKeyPressed(1,0,1);
 				}
-				debounceCounterKeyPressed(1,0,1);
+			} else {
+				keyID = 1;
+				if(debounceCounter < debounceMax) {
+					debounceCounter++;
+					//printf("LED1State = 1 ,  counter \n");
+				} else if (debounceCounter == debounceMax) {
+					if(lastLED1State == 0) {
+						rSlot.dirf |= 0x20;
+						sendLocoNetDirf(&rSlot);
+						PORTA |= (1 << LED1);
+						if(UART_ON ) {printf("dir rueckwaerts = %u \n", rSlot.dirf); }
+						lastLED1State = 1;
+					} else if (lastLED1State == 1) {
+						PORTA &= ~(1 << LED1);
+						rSlot.dirf &= 0x00;
+						sendLocoNetDirf(&rSlot);
+						if(UART_ON ) {printf("dir vorwaerts = %u \n", rSlot.dirf); }
+						lastLED1State = 0;
+					}
+					debounceCounterKeyPressed(1,0,1);
+				}
 			}
 		} else if(bit_is_set(PINC,0) && keyID == 1) {
 			debounceCounterKeyPressed(0,0,0);
@@ -991,7 +1010,12 @@ void vProcessKey(void)
 				ReglerKeysActive = 4;
 				debounceCounterKeyPressed(8,0,1);
 				if(UART_ON) { printf("ReglerKeyActive 4 \n"); }
+				printf("ThrState %u ", bThrState);
+				printf("\n");
 				printf("adr2 %u ", eeprom_read_byte(&abEEPROM[EEPROM_ADR_LOCO_LB]));
+				printf("\n");
+				printf("slot %u ", rSlot.slot);
+				printf("\n");				
 		}
 	} else if(bit_is_set(PINA,2) && keyID == 8) {;
 		debounceCounterKeyPressed(0,0,0);
@@ -1262,6 +1286,7 @@ void sendLocoNetWriteSlotData(rwSlotDataMsg *pSlot)
     {
     case THR_STATE_ACQUIRE_LOCO_WRITE:
     case THR_STATE_RECONNECT_WRITE:
+	printf("reconnect write \n");
       vSetState(THR_STATE_RECONNECT_GET_SLOT);
       break;
     case THR_STATE_UNCONNECTED_WRITE:
@@ -1292,6 +1317,7 @@ void sendLocoNetMove(byte bSrc, byte bDest)
     // send message failed, so set new state
     if (bThrState == THR_STATE_RECONNECT_NULL_MOVE)
     {
+		printf("state reconnect null move \n");
       vSetState(THR_STATE_RECONNECT_GET_SLOT);
     }
     else
