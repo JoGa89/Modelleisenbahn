@@ -128,30 +128,30 @@
 #define LED2			PA1
 #define FUNK_L_4		PA2 
 #define RICHTG_2		PA3 
-#define REGLER_1		PA4
-#define REGLER_2		PA5
-#define REGLER_3		PA6
-#define REGLER_4		PA7
+#define REGLER_1		PA6
+#define REGLER_2		PA7
+#define REGLER_3		PA5
+#define REGLER_4		PA4
 
 #define PORT_A			PORTA
 #define DDR_A			DDRA
 #define PIN_A			PINA
 
-//PortB (PB1, PB2, PB3 : undefined)
+//PortB (PB1, PB2, PB3, PB4 : undefined)
 #define FUNK_L_2		PB0
-#define FUNK_L_3		PB4
 
 #define PORT_B			PORTB
 #define DDR_B			DDRB
 #define PIN_B			PINB
 
-//PortC (PC4, PC5 : undefined)
+//PortC (PC4 : undefined)
 
 #define RICHTG_1		PC0
 #define RICHTG_4		PC1
 #define RICHTG_3		PC2
 #define LED3			PC3
 #define LED4			PC4
+#define FUNK_L_3		PC5
 #define FUNK_L_1		PC7
 
 #define PORT_C			PORTC
@@ -227,6 +227,15 @@ enum EEPROM_ADR
   EEPROM_SW_DAY,
   EEPROM_SW_MONTH,
   EEPROM_SW_YEAR,
+  
+  EEPROM_ADR_R1_LOCO_HB,
+  EEPROM_ADR_R1_LOCO_LB,
+  EEPROM_R1_STAT,
+ 
+  EEPROM_ADR_R2_LOCO_HB,
+  EEPROM_ADR_R2_LOCO_LB,
+  EEPROM_R2_STAT,  
+  
   EEPROM_ADR_LAST,
 };
 

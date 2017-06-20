@@ -14,6 +14,9 @@
 #include "potadc.h"         // potAdcSpeedValue, potAdcRawValue
                             // potAdcPowerOff(), potAdcInit(),
                             // potAdcTimerAction()
+#include <stdio.h>
+#include <util/delay.h>
+
 
 // extern variables ------------------------------------------------------------
 
@@ -22,10 +25,12 @@ volatile uint16_t potAdcRawValue = 0;
 
 // defines ---------------------------------------------------------------------
 
+//#define UART
+
 #define ADC_CLOCK_SETVAL 100000 // should be 50kHz to 200kHz to get maximal
                                 // resolution
 
-#if F_CPU / ADC_CLOCK_SETVAL >= 128
+/*#if F_CPU / ADC_CLOCK_SETVAL >= 128
   #define ADPS ((1<<ADPS2) | (1<<ADPS1) | (1<<ADPS0))
 #elif F_CPU / ADC_CLOCK_SETVAL >= 64
   #define ADPS ((1<<ADPS2) | (1<<ADPS1) | (0<<ADPS0))
@@ -39,7 +44,8 @@ volatile uint16_t potAdcRawValue = 0;
   #define ADPS ((0<<ADPS2) | (1<<ADPS1) | (0<<ADPS0))
 #else // F_CPU / ADC_CLOCK_SETVAL >= 2
   #define ADPS ((0<<ADPS2) | (0<<ADPS1) | (1<<ADPS0))
-#endif
+#endif*/
+#define ADPS ((1<<ADPS2) | (1<<ADPS1) | (1<<ADPS0))
 
 #define DIVISION_FACTOR (1<<(ADPS))         // 64 on FREDI with 7.3728MHz
 #define ADC_CLOCK (F_CPU / DIVISION_FACTOR) // 115200 on FREDI => a conversation
@@ -81,11 +87,12 @@ static inline uint16_t deltaFilter( uint16_t adcVal ) {
  * @return
  */
 static inline uint8_t mapSpeedVal( uint16_t adcValue ) {
+
   uint8_t speedVal = (uint8_t) (adcValue >> 3);
   if( speedVal > 0 ) {
     speedVal++; //skip E_STOP
   }
-  if( speedVal > 126 ) {
+  if( speedVal > 126) {
     speedVal = 126;
   }
   return speedVal;
@@ -125,22 +132,26 @@ void potAdcPowerOff(void) {
 }
 
 void potAdcInit(void) {
-  #if defined(__AVR_ATmega48__)  | defined(__AVR_ATmega48A__)  \
-    | defined(__AVR_ATmega48P__) | defined(__AVR_ATmega88__)   \
-    | defined(__AVR_ATmega88A__) | defined(__AVR_ATmega88P__)  \
-    | defined(__AVR_ATmega168__) | defined(__AVR_ATmega168A__) \
-    | defined(__AVR_ATmega168P__)| defined(__AVR_ATmega328__)  \
-    | defined(__AVR_ATmega328P__)
-    PRR   &= ~(1<<PRADC); // enable ADC in Power Reduction Register.
-    DIDR0 |= (1<<ADC0D);  // disable digital input buffer to reduce
-                          // power consumption
-  #endif
-
+	/*
+	if(ch == 0) {
+	 ADMUX  = (0<<REFS1) | (1<<REFS0) // AVCC pin as reference
+			| (0<<ADLAR)              // 0 = left adjust, 1 = right adjust	
+			| (0<<MUX3)  | (1<<MUX2)  | (1<<MUX1)  | (0<<MUX0); // select ADC6 pin					
+	} else if(ch == 1) {
+	 ADMUX  = (0<<REFS1) | (1<<REFS0) // AVCC pin as reference
+	 | (0<<ADLAR)              // 0 = left adjust, 1 = right adjust		
+		| (0<<MUX3)  | (1<<MUX2)  | (1<<MUX1)  | (1<<MUX0); // select ADC7 pin
+	}
+	*/
+	
   ADMUX  = (0<<REFS1) | (1<<REFS0) // AVCC pin as reference
          | (0<<ADLAR)              // 0 = left adjust, 1 = right adjust
-         | (0<<MUX3)  | (0<<MUX2)  | (0<<MUX1)  | (0<<MUX0); // select ADC0 pin
+         //| (0<<MUX3)  | (1<<MUX2)  | (0<<MUX1)  | (0<<MUX0); // select ADC4 pin
+		 //| (0<<MUX3)  | (1<<MUX2)  | (0<<MUX1)  | (1<<MUX0); // select ADC5 pin	
+		 | (0<<MUX3)  | (1<<MUX2)  | (1<<MUX1)  | (1<<MUX0); // select ADC7 pin
+		 //| (0<<MUX3)  | (1<<MUX2)  | (1<<MUX1)  | (0<<MUX0); // select ADC6 pin		
 
-  #if defined(__AVR_ATmega48__)  | defined(__AVR_ATmega48A__)  \
+  /*#if defined(__AVR_ATmega48__)  | defined(__AVR_ATmega48A__)  \
     | defined(__AVR_ATmega48P__) | defined(__AVR_ATmega88__)   \
     | defined(__AVR_ATmega88A__) | defined(__AVR_ATmega88P__)  \
     | defined(__AVR_ATmega168__) | defined(__AVR_ATmega168A__) \
@@ -152,11 +163,11 @@ void potAdcInit(void) {
            | (0<<ADIF)  // do not modify interrupt flag
            | (0<<ADIE)  // disable interrupt
            | ADPS;      // ADC precaler selection
-    // ADATE is 0 here, so we do not care about ADTS[2:0] in ADCSRB
-  #elif defined(__AVR_ATmega8__)
+    // ADATE is 0 here, so we do not care about ADTS[2:0] in ADCSRB*/
+  #if defined(__AVR_ATmega16__)
     ADCSRA = (1<<ADEN)  // Enable ADC
            | (1<<ADSC)  // Start single conversion
-           | (0<<ADFR)  // deselect ADC Free Running Mode
+
            | (0<<ADIF)  // do not modify interrupt flag
            | (0<<ADIE)  // disable interrupt
            | ADPS;      // ADC precaler selection
@@ -167,7 +178,32 @@ void potAdcInit(void) {
   while (bit_is_set(ADCSRA, ADSC)); // wait for measurement
   ADCH;                             // throw away first analog value
   potAdcSpeedValue = 0;             // ignore first analog value
-  ADCSRA      |= _BV(ADSC);         // start new measurement
+}
+
+void potiRead(uint8_t ch)
+{
+	ADMUX = (ADMUX & 0xF8);
+	if(ch == 0) {
+		  ADMUX  = (0<<MUX3)  | (1<<MUX2)  | (1<<MUX1)  | (0<<MUX0); // select ADC6 pin	
+	} else if (ch == 1) {
+		  ADMUX  = (0<<MUX3)  | (1<<MUX2)  | (1<<MUX1)  | (1<<MUX0); // select ADC7 pin	
+	} else if(ch == 2) {
+		  ADMUX  = (0<<MUX3)  | (1<<MUX2)  | (0<<MUX1)  | (1<<MUX0); // select ADC5 pin		
+	} else if(ch == 3) {
+		  ADMUX  = (0<<MUX3)  | (1<<MUX2)  | (0<<MUX1)  | (0<<MUX0); // select ADC4 pin	  		  
+	} 
+	
+	// start single convertion
+	// write ’1? to ADSC
+	//ADCSRA |= (1<<ADSC);
+	
+	// wait for conversion to complete
+	// ADSC becomes ’0? again
+	// till then, run loop continuously
+ // while (bit_is_set(ADCSRA, ADSC)); // wait for measurement
+  //ADCH;                             // throw away first analog value
+  
+	//return (ADC);
 }
 
 void potAdcTimerAction(void) {
@@ -179,6 +215,11 @@ void potAdcTimerAction(void) {
 
   if (bit_is_clear(ADCSRA, ADSC)) // measurement done
   {
+	#if defined(UART2)  
+		printf("ADCL %x ", ADCL);
+		printf("ADCH %x ", ADCH);
+	#endif
+	
     potAdcRawValue = ADCW;
     ADCSRA |= _BV(ADSC);          // start new measurement
 
@@ -186,7 +227,15 @@ void potAdcTimerAction(void) {
 
       potAdcSpeedValue
                 = timeFilter( mapSpeedVal( deltaFilter( potAdcRawValue ) ) );
-
+				#if defined(UART)
+					printf(" Raw val : %x  DeltaFilter : %x  mapspeedVal: %x ",
+					 potAdcRawValue,
+					 deltaFilter((potAdcRawValue)) ,
+					 mapSpeedVal( deltaFilter( potAdcRawValue ) )
+					   );
+					printf("\n");
+				#endif
+//printf("adcval: %x " , deltaFilter( potAdcRawValue ));
     #elif NB_SAMPLES_LOG2 > 0
 
       static uint8_t sampleCnt = 0;

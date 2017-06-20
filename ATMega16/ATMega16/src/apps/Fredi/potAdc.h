@@ -11,6 +11,7 @@
 
 #include <stdint.h>         // typedef uint8_t, uint16_t
 
+
 /**
  * The current position of the pot as DCC speed value (0,2..126).
  * Note that ESTOP=1 is skipped.
