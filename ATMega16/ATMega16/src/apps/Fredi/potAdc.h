@@ -18,7 +18,7 @@
  * This value is already "filtered".
  * It is updated by calls to potAdcTimerAction().
  */
-extern volatile uint8_t potAdcSpeedValue;
+extern volatile uint8_t potAdcSpeedValue[];
 
 /**
  * The current position of the pot as raw value (0..1023).
@@ -42,6 +42,6 @@ void potAdcInit(void);
  * and potAdcRawValue.
  * Installed as TimerAction in main and called every 10ms.
  */
-void potAdcTimerAction(void);
+void potAdcTimerAction(uint8_t);
 
 #endif /* POTADC_H_ */

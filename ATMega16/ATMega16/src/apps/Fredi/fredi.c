@@ -76,7 +76,7 @@ uint16_t potiRead(uint8_t ch);
 #define TIMER_PRESCALER_CODE  4  
 #define TIMER_PRESCALER_COUNT 256L
 
-#define UART					// AUSKOMMENTIEREN WENN UART NICHT ANGESCHLOSSEN IST!
+//#define UART					// AUSKOMMENTIEREN WENN UART NICHT ANGESCHLOSSEN IST!
 
 static volatile byte	UART_ON = 0;
 
@@ -487,7 +487,7 @@ static FILE mystdout = FDEV_SETUP_STREAM( uart_putchar, NULL, _FDEV_SETUP_WRITE 
 /********************************UARTFunctionsEnd******/
 
 void rSlotInit() {
-	for(int i = 0;i < 4; i++) {
+	for(int i = 0;i <= 3; i++) {
 		rSlot[i].command   = OPC_WR_SL_DATA;
 		rSlot[i].mesg_size = 14;
 		rSlot[i].slot      = 0;                        //slot number for this request
@@ -501,6 +501,7 @@ void rSlotInit() {
 		rSlot[i].snd       = 0;                        // Sound 1-4 / F5-F8
 	}	
 }
+
 void rSlotReconnect() {
 			if(rSlot[0].adr != 0 || rSlot[0].adr2 != 0) {
 				//printf("sendLocoNetAdr : %u \n", rSlot[0].adr);
@@ -657,7 +658,7 @@ int main(void)
 		*/
 		
 		potiRead(0);
-		potAdcTimerAction();
+		potAdcTimerAction(0);
 		//vProcessRxLoconetMessage();
 		vProcessPoti(0);
 		//vProcessRxLoconetMessage();
@@ -665,7 +666,7 @@ int main(void)
 		//printf("ADCV POTI 2 %u \n", potiRead(1));		
 		
 		potiRead(1);
-		potAdcTimerAction();
+		potAdcTimerAction(1);
 		//vProcessRxLoconetMessage();
 		vProcessPoti(1);
 		//vProcessRxLoconetMessage();	
@@ -1325,7 +1326,7 @@ void vProcessPoti(uint8_t ch)
 	//Wenn Richtung gewechselt, pot in richtige richtung bringen um die Geschwindigkeit zu ändern.
     if (!fSetSpeed[ch])
     {
-      if (potAdcSpeedValue == 0)     // potivalue is in right range for  set speed again
+      if (potAdcSpeedValue[ch] == 0)     // potivalue is in right range for  set speed again
       {
         fSetSpeed[ch] = TRUE;
       }
@@ -1333,7 +1334,7 @@ void vProcessPoti(uint8_t ch)
 
     if (fSetSpeed[ch])
     {
-      bSpd[ch] = potAdcSpeedValue;
+      bSpd[ch] = potAdcSpeedValue[ch];
 	  /*
 	  	  #if defined(UART)
 	  	  printf(" bSpD: %u \n", bSpd[ch]);

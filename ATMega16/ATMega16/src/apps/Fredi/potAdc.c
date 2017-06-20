@@ -20,12 +20,12 @@
 
 // extern variables ------------------------------------------------------------
 
-volatile uint8_t potAdcSpeedValue = 0;
+volatile uint8_t potAdcSpeedValue[4] = {0};
 volatile uint16_t potAdcRawValue = 0;
 
 // defines ---------------------------------------------------------------------
 
-//#define UART
+#define UART
 
 #define ADC_CLOCK_SETVAL 100000 // should be 50kHz to 200kHz to get maximal
                                 // resolution
@@ -177,7 +177,7 @@ void potAdcInit(void) {
 
   while (bit_is_set(ADCSRA, ADSC)); // wait for measurement
   ADCH;                             // throw away first analog value
-  potAdcSpeedValue = 0;             // ignore first analog value
+  potAdcSpeedValue[0] = 0;             // ignore first analog value
 }
 
 void potiRead(uint8_t ch)
@@ -193,6 +193,11 @@ void potiRead(uint8_t ch)
 		  ADMUX  = (0<<MUX3)  | (1<<MUX2)  | (0<<MUX1)  | (0<<MUX0); // select ADC4 pin	  		  
 	} 
 	
+	
+	while (bit_is_set(ADCSRA, ADSC)); // wait for measurement
+	ADCH;                             // throw away first analog value
+	potAdcSpeedValue[ch] = 0;             // ignore first analog value	
+	
 	// start single convertion
 	// write ’1? to ADSC
 	//ADCSRA |= (1<<ADSC);
@@ -206,7 +211,7 @@ void potiRead(uint8_t ch)
 	//return (ADC);
 }
 
-void potAdcTimerAction(void) {
+void potAdcTimerAction(uint8_t ch) {
 
   #define NB_SAMPLES_LOG2 0 // log to basis 2 of number of samples
                             // 3: take arithmetic mean of 8 samples
@@ -225,7 +230,7 @@ void potAdcTimerAction(void) {
 
     #if NB_SAMPLES_LOG2 == 0
 
-      potAdcSpeedValue
+      potAdcSpeedValue[ch]
                 = timeFilter( mapSpeedVal( deltaFilter( potAdcRawValue ) ) );
 				#if defined(UART)
 					printf(" Raw val : %x  DeltaFilter : %x  mapspeedVal: %x ",
